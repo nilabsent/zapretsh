@@ -1,0 +1,1 @@
+/etc/init.d/zapret enabled && /etc/init.d/zapret reload
