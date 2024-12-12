@@ -1,0 +1,12 @@
+[Unit]
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+TimeoutSec=5sec
+ExecStart=/usr/bin/zapret.sh start
+ExecStop=/usr/bin/zapret.sh stop
+
+[Install]
+WantedBy=multi-user.target
