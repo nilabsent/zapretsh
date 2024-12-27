@@ -274,8 +274,8 @@ firewall_start() {
   [ "$IPV6_ENABLED" = "1" ] && IF_LOG="$_ISP_IF$_ISP_IF6"
 
   if [ -n "$IF_LOG" ]; then
-    IF_LOG=$(echo $IF_LOG | sort -u | tr "\n" " ")
-    log "firewall rules were applied on interface(s): $IF_LOG"
+    IF_LOG=$(echo "$IF_LOG" | sort -u | tr "\n" " ")
+    log "firewall rules were applied on interface(s):$IF_LOG"
   else
     log "firewall rules were not set"
   fi
