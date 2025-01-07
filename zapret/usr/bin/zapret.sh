@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# https://github.com/nilabsent/zapretsh
+
 # for openwrt versions 21 and above (iptables):
 # opkg install iptables-mod-nfqueue iptables-mod-conntrack-extra
 #
