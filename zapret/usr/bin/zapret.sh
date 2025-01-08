@@ -14,6 +14,7 @@
 
 NFQWS_BIN="/usr/bin/nfqws"
 NFQWS_BIN_OPT="/opt/bin/nfqws"
+NFQWS_BIN_GIT="/tmp/nfqws"
 ETC_DIR="/etc"
 
 # padavan
@@ -79,6 +80,8 @@ fi
     fi
 done
 
+[ -f "$NFQWS_BIN_GIT" ] && [ -x "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
+
 [ -f "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found"
 [ -f "$CONFDIR" ] && rm -f "$CONFDIR"
 [ -d "$CONFDIR" ] || mkdir -p "$CONFDIR" || exit 1
@@ -113,7 +116,7 @@ _MANGLE_RULES() ( echo "
 ")
 
 is_running() {
-  [ -z "$(pgrep -f "$NFQWS_BIN" 2>/dev/null)" ] && return 1
+  [ -z "$(pgrep `basename "$NFQWS_BIN"` 2>/dev/null)" ] && return 1
   [ ! -f "$PIDFILE" ] && return 1
   return 0
 }
@@ -320,24 +323,55 @@ start_service() {
 
 stop_service() {
   firewall_stop
-
-  if ! is_running; then
-    echo 'service zapret is not running'
-    return
-  fi
-
-  killall -q -s 15 $(basename "$NFQWS_BIN") && rm -f "$PIDFILE"
-  if is_running; then
-    log "service nfqws not stopped"
-  else
-    log "service nfqws stopped"
-  fi
+  killall -q -s 15 $(basename "$NFQWS_BIN") && log "service nfqws stopped"
+  rm -f "$PIDFILE"
 }
 
 reload_service() {
   is_running || return
   firewall_start
   kill -HUP $(cat "$PIDFILE")
+}
+
+download_nfqws() {
+  cd /tmp
+
+  ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|armv|i386|i686|x86_64')
+  case "$ARCH" in
+    mips)
+      ARCH="mips32r1-msb"
+      grep -qE 'system type.*(MediaTek|Ralink)' /proc/cpuinfo && ARCH="mips32r1-lsb"
+      ;;
+    mipsel)
+      ARCH="mips32r1-lsb"
+      ;;
+    armv)
+      ARCH="armv7l"
+      ;;
+    i386|i686)
+      ARCH="x86"
+      ;;
+  esac
+  [ -n "$ARCH" ] || exit
+
+  if [ -f /usr/bin/curl ]; then
+    URL=$(curl -s --connect-timeout 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' |\
+      grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
+    [ -n "$URL" ] || error "unable to get link to nfqws"
+    curl -sSL $URL -o zapret.tar.gz
+  else
+    URL=$(wget -q 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
+      grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
+    [ -n "$URL" ] || error "unable to get link to nfqws"
+    wget -q $URL -O zapret.tar.gz
+  fi
+  [ -f zapret.tar.gz ] || error "unable to download $URL"
+
+  local nfqws=$(tar tzfv zapret.tar.gz | grep binaries/$ARCH/nfqws | awk '{print $6}')
+  [ -n "$nfqws" ] || error "nfqws not found in archive zapret.tar.gz for arch $ARCH"
+  tar xzf zapret.tar.gz "$nfqws" -O > nfqws
+  chmod +x nfqws
+  rm -f zapret.tar.gz
 }
 
 case "$1" in
@@ -369,6 +403,9 @@ case "$1" in
   reload)
     reload_service
     ;;
+  download)
+    download_nfqws
+    ;;
   *)
-    echo "Usage: $0 {start|stop|restart|status}"
+    echo "Usage: $0 {start|stop|restart|download|status}"
 esac
