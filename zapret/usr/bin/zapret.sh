@@ -358,12 +358,12 @@ download_nfqws() {
     URL=$(curl -s --connect-timeout 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' |\
       grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
     [ -n "$URL" ] || error "unable to get link to nfqws"
-    curl -sSL $URL -o zapret.tar.gz
+    curl -sSL --connect-timeout 5 $URL -o zapret.tar.gz
   else
-    URL=$(wget -q 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
+    URL=$(wget -q -T 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
       grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
     [ -n "$URL" ] || error "unable to get link to nfqws"
-    wget -q $URL -O zapret.tar.gz
+    wget -q -T 5 $URL -O zapret.tar.gz
   fi
   [ -f zapret.tar.gz ] || error "unable to download $URL"
 
