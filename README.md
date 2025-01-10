@@ -36,5 +36,5 @@
 - применить правила iptables/nftables: `zapret.sh firewall-start`
 - удалить правила iptables/nftables: `zapret.sh firewall-stop`
 - попытаться скачать nfqws в `/tmp/nfqws` из репозитория <a href="https://github.com/bol-van/zapret">zapret</a>: `zapret.sh download-nfqws`
-- скачать список доменов в `/tmp/filter.list` из репозитория https://github.com/1andrevich/Re-filter-lists: `zapret.sh download-list`
+- скачать список доменов в `/tmp/filter.list` из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">Re-filter-lists</a>: `zapret.sh download-list`
 - скачать и nfqws и список доменов: `zapret.sh download`
