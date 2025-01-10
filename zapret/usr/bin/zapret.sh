@@ -25,18 +25,22 @@ CONFDIR_EXAMPLE="/usr/share/zapret"
 CONFFILE="$CONFDIR/config"
 PIDFILE="/var/run/zapret.pid"
 
-readonly HOSTLIST_MARKER="<HOSTLIST>"
-readonly HOSTLIST_NOAUTO_MARKER="<HOSTLIST_NOAUTO>"
+HOSTLIST_DOMAINS="https://github.com/1andrevich/Re-filter-lists/releases/latest/download/domains_all.lst"
+
+HOSTLIST_MARKER="<HOSTLIST>"
+HOSTLIST_NOAUTO_MARKER="<HOSTLIST_NOAUTO>"
 
 HOSTLIST_NOAUTO="
   --hostlist=${ETC_DIR}/zapret/user.list
   --hostlist=${ETC_DIR}/zapret/auto.list
   --hostlist-exclude=${ETC_DIR}/zapret/exclude.list
+  --hostlist=/tmp/filter.list
 "
 HOSTLIST="
   --hostlist=${ETC_DIR}/zapret/user.list
   --hostlist-exclude=${ETC_DIR}/zapret/exclude.list
   --hostlist-auto=${ETC_DIR}/zapret/auto.list
+  --hostlist=/tmp/filter.list
 "
 
 ### default config
@@ -147,6 +151,7 @@ replace_str()
 }
 
 startup_args() {
+  [ -f /tmp/filter.list ] || touch /tmp/filter.list
   local args="--user=$USER --qnum=$NFQUEUE_NUM"
 
   [ "$LOG_LEVEL" = "1" ] && args="--debug=syslog $args"
@@ -358,20 +363,37 @@ download_nfqws() {
     URL=$(curl -s --connect-timeout 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' |\
       grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
     [ -n "$URL" ] || error "unable to get link to nfqws"
-    curl -sSL --connect-timeout 5 $URL -o zapret.tar.gz
+    curl -sSL --connect-timeout 5 $URL -o zapret.tar.gz || error "unable to download $URL"
   else
     URL=$(wget -q -T 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
       grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
     [ -n "$URL" ] || error "unable to get link to nfqws"
-    wget -q -T 5 $URL -O zapret.tar.gz
+    wget -q -T 5 $URL -O zapret.tar.gz || error "unable to download $URL"
   fi
-  [ -f zapret.tar.gz ] || error "unable to download $URL"
+  [ -s zapret.tar.gz ] || exit
+  [ $(cat zapret.tar.gz | head -c3) = "Not" ] && exit
+  echo "downloaded successfully: $URL"
 
-  local nfqws=$(tar tzfv zapret.tar.gz | grep binaries/$ARCH/nfqws | awk '{print $6}')
-  [ -n "$nfqws" ] || error "nfqws not found in archive zapret.tar.gz for arch $ARCH"
-  tar xzf zapret.tar.gz "$nfqws" -O > nfqws
-  chmod +x nfqws
+  local NFQWS=$(tar tzfv zapret.tar.gz | grep binaries/$ARCH/nfqws | awk '{print $6}')
+  [ -n "$NFQWS" ] || error "nfqws not found in archive zapret.tar.gz for arch $ARCH"
+  tar xzf zapret.tar.gz "$NFQWS" -O > $NFQWS_BIN_GIT
+  [ -s $NFQWS_BIN_GIT ] && chmod +x $NFQWS_BIN_GIT
   rm -f zapret.tar.gz
+}
+
+download_list() {
+  local LIST="/tmp/filter.list"
+  if [ -f /usr/bin/curl ]; then
+    curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $LIST || error "unable to download $URL"
+  else
+    wget -q -T 5 "$HOSTLIST_DOMAINS" -O $LIST || error "unable to download $URL"
+  fi
+  [ -s "$LIST" ] && echo "downloaded successfully: $HOSTLIST_DOMAINS"
+}
+
+download() {
+  download_nfqws
+  download_list
 }
 
 case "$1" in
@@ -404,8 +426,14 @@ case "$1" in
     reload_service
     ;;
   download)
+    download
+    ;;
+  download-nfqws)
     download_nfqws
     ;;
+  download-list)
+    download_list
+    ;;
   *)
-    echo "Usage: $0 {start|stop|restart|download|status}"
+    echo "Usage: $0 {start|stop|restart|download|download-nfqws|download-list|status}"
 esac
