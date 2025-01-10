@@ -372,7 +372,7 @@ download_nfqws() {
   fi
   [ -s zapret.tar.gz ] || exit
   [ $(cat zapret.tar.gz | head -c3) = "Not" ] && exit
-  echo "downloaded successfully: $URL"
+  log "downloaded successfully: $URL"
 
   local NFQWS=$(tar tzfv zapret.tar.gz | grep binaries/$ARCH/nfqws | awk '{print $6}')
   [ -n "$NFQWS" ] || error "nfqws not found in archive zapret.tar.gz for arch $ARCH"
@@ -388,7 +388,7 @@ download_list() {
   else
     wget -q -T 5 "$HOSTLIST_DOMAINS" -O $LIST || error "unable to download $HOSTLIST_DOMAINS"
   fi
-  [ -s "$LIST" ] && echo "downloaded successfully: $HOSTLIST_DOMAINS"
+  [ -s "$LIST" ] && log "downloaded successfully: $HOSTLIST_DOMAINS"
 }
 
 download() {
