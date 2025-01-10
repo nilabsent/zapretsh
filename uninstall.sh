@@ -27,7 +27,7 @@ case "$ID" in
         remove_zapret
     ;;
     *)
-        if [ -d /etc/systemd ]; then
+        if [ -f /etc/systemd/system/zapret.service ]; then
             systemctl stop zapret.service
             systemctl disable zapret.service
             rm -f /etc/systemd/system/zapret.service
