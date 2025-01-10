@@ -3,14 +3,10 @@
 # https://github.com/nilabsent/zapretsh
 
 # for openwrt versions 21 and above (iptables):
-# opkg install iptables-mod-nfqueue iptables-mod-conntrack-extra
+# opkg install curl iptables-mod-nfqueue iptables-mod-conntrack-extra
 #
 # for openwrt versions 22 and later (nftables):
-# opkg install kmod-nft-queue kmod-nfnetlink-queue
-
-# for linux with nftables may need to install:
-# debian: libnetfilter-conntrack3 libnetfilter-queue1
-# arch: libnetfilter-conntrack libnetfilter-queue
+# opkg install curl kmod-nft-queue kmod-nfnetlink-queue
 
 NFQWS_BIN="/usr/bin/nfqws"
 NFQWS_BIN_OPT="/opt/bin/nfqws"
@@ -84,9 +80,8 @@ fi
     fi
 done
 
-[ -f "$NFQWS_BIN_GIT" ] && [ -x "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
+[ -x "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
 
-[ -f "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found"
 [ -f "$CONFDIR" ] && rm -f "$CONFDIR"
 [ -d "$CONFDIR" ] || mkdir -p "$CONFDIR" || exit 1
 # copy all non-existent config files to storage except fake dir
@@ -308,6 +303,7 @@ system_config() {
 }
 
 start_service() {
+  [ -f "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found"
   if is_running; then
     echo "service nfqws is already running"
     return
