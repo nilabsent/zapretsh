@@ -384,9 +384,9 @@ download_nfqws() {
 download_list() {
   local LIST="/tmp/filter.list"
   if [ -f /usr/bin/curl ]; then
-    curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $LIST || error "unable to download $URL"
+    curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $LIST || error "unable to download $HOSTLIST_DOMAINS"
   else
-    wget -q -T 5 "$HOSTLIST_DOMAINS" -O $LIST || error "unable to download $URL"
+    wget -q -T 5 "$HOSTLIST_DOMAINS" -O $LIST || error "unable to download $HOSTLIST_DOMAINS"
   fi
   [ -s "$LIST" ] && echo "downloaded successfully: $HOSTLIST_DOMAINS"
 }
