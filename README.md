@@ -56,15 +56,15 @@
 ## Ленивый режим
 
 Если не хочется возиться с формированием/поиском списков, то можно фильтровать вообще все сайты, за исключением тех, что внесены в `exclude.list`:
-- в стратегии использовать макрос **<HOSTLIST_NOAUTO>**
+- в стратегии использовать макрос `<HOSTLIST_NOAUTO>`
 - удалить все записи в списках `user.list` и `auto.list`
 - в `exclude.list` добавить хосты, которые не нужно обрабатывать, если сайт из-за фильтрации работает некорректно: например, есть проблемы с сертификатами или отображением данных.
 
 ## Стратегии фильтрации
 
-Поведение почти аналогично <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#множественные-стратегии>zapret</a> за исключением того, что стратегии помещаются не в переменные, а записываются в файл `/etc/zapret/strategy` (**padavan**: `/etc/storage/zapret/strategy`) для более простого (на мой взгляд) редактирования.
+Поведение почти аналогично <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#множественные-стратегии">zapret</a> за исключением того, что стратегии помещаются не в переменные, а записываются в файл `/etc/zapret/strategy` ( **padavan**: `/etc/storage/zapret/strategy` ) для более простого (на мой взгляд) редактирования.
 
-<a href=https://github.com/bol-van/zapret?tab=readme-ov-file#nfqws">Справка по ключам утилиты nfqws для написания стратегий</a>
+<a href="https://github.com/bol-van/zapret?tab=readme-ov-file#nfqws">Справка по ключам утилиты nfqws для написания стратегий</a>
 
 Для примера:
 ```
@@ -98,12 +98,12 @@
 - `--new` - **обязательный** разделитель **между** стратегиями
 - `--filter-tcp=443` - фильтровать https трафик
 - стратегия фильтрации
-- далее указывается <a href="github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для TLS
+- далее указывается <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для TLS
 - макрос списков хостов
 - `--new` - **обязательный** разделитель **между** стратегиями
 - `--filter-udp=443` - фильтровать quic трафик
 - стратегия фильтрации
-- далее указывается <a href="github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для QUIC
+- далее указывается <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для QUIC
 - макрос списков хостов. Для quic всегда выбирайте **<HOSTLIST_NOAUTO>**
 - `--new` - **обязательный** разделитель **между** стратегиями
 - `--filter-udp=50000-50099` - фильтрация голосового трафика Discord
