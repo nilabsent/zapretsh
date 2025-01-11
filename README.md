@@ -1,10 +1,10 @@
 # zapret.sh
 
-Вариант альтернативного скрипта запуска утилиты nfqws проекта zapret https://github.com/bol-van/zapret
+Вариант альтернативного скрипта запуска утилиты `nfqws` проекта **zapret** https://github.com/bol-van/zapret
 
-Изначально писался для работы на прошивке padavan (присутствует в репозитории https://gitlab.com/hadzhioglu/padavan-ng ), но потом применение было расширено до OpwenWRT и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
+Изначально писался для работы на прошивке **padavan** (присутствует в репозитории https://gitlab.com/hadzhioglu/padavan-ng ), но потом применение было расширено до OpwenWRT и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
 
-Поддерживается работа на основе встроенных в nfqws методов autohostlist/hostlist с использованием правил iptables/nftables. ipset не применяется.
+Поддерживается работа на основе встроенных в `nfqws` методов autohostlist/hostlist с использованием правил iptables/nftables. `ipset` не применяется.
 
 ## Установка
 
@@ -25,7 +25,7 @@
   - через службу systemd: `sudo systemctl restart zapret.service`
   - самим скриптом: `sudo zapret.sh restart`
 
-При загрузке компьютера/роутера сервис запустится автоматически. В OpenWRT в rc.local будет прописано обновление списков доменов после полной загрузки роутера.
+При загрузке компьютера/роутера сервис запустится автоматически. В OpenWRT в `/etc/rc.local` будет прописано обновление списков доменов после полной загрузки роутера.
 
 ## Доступные команды:
 
@@ -35,6 +35,6 @@
 - перечитать списки сайтов в файлах и обновить правила iptables/nftables: `zapret.sh reload`
 - применить правила iptables/nftables: `zapret.sh firewall-start`
 - удалить правила iptables/nftables: `zapret.sh firewall-stop`
-- попытаться скачать nfqws в `/tmp/nfqws` из репозитория <a href="https://github.com/bol-van/zapret">zapret</a>: `zapret.sh download-nfqws`
-- скачать список доменов в `/tmp/filter.list` из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">Re-filter-lists</a>: `zapret.sh download-list`
+- скачать файл `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">zapret</a>: `zapret.sh download-nfqws`
+- скачать список доменов из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">Re-filter-lists</a>: `zapret.sh download-list`
 - скачать и nfqws и список доменов: `zapret.sh download`
