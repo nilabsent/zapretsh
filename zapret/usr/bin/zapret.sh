@@ -337,7 +337,7 @@ reload_service() {
 download_nfqws() {
   cd /tmp
 
-  ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|armv|i386|i686|x86_64')
+  ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|arm|i386|i686|x86_64')
   case "$ARCH" in
     mips)
       ARCH="mips32r1-msb"
@@ -345,9 +345,6 @@ download_nfqws() {
       ;;
     mipsel)
       ARCH="mips32r1-lsb"
-      ;;
-    armv)
-      ARCH="armv7l"
       ;;
     i386|i686)
       ARCH="x86"
