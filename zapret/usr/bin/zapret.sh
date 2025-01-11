@@ -80,7 +80,7 @@ fi
     fi
 done
 
-[ -x "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
+[ -s "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
 
 [ -f "$CONFDIR" ] && rm -f "$CONFDIR"
 [ -d "$CONFDIR" ] || mkdir -p "$CONFDIR" || exit 1
