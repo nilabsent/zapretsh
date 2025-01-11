@@ -2,7 +2,7 @@
 
 Вариант альтернативного скрипта запуска утилиты `nfqws` проекта **zapret** https://github.com/bol-van/zapret
 
-Изначально писался для работы на прошивке **padavan** (присутствует в репозитории https://gitlab.com/hadzhioglu/padavan-ng ), но потом применение было расширено до OpwenWRT и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
+Изначально написан для работы с прошивкой **padavan** (присутствует в репозитории https://gitlab.com/hadzhioglu/padavan-ng ), но потом применение было расширено до <a href="https://openwrt.org/">OpenWRT</a> и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
 
 Поддерживается работа на основе встроенных в `nfqws` методов autohostlist/hostlist с использованием правил iptables/nftables. `ipset` не применяется.
 
