@@ -32,7 +32,7 @@ case "$ID" in
         cp -rf ./openwrt/etc /
         chmod +x /etc/init.d/zapret
         sed -i '/zapret.sh/d' /etc/rc.local
-        if grep -q "exit 0" /etc/rc.local; then
+        [ "$LAZY_MODE" ] || if grep -q "exit 0" /etc/rc.local; then
             sed -i '/exit 0/i sleep 11 && zapret.sh download-list && zapret.sh restart' /etc/rc.local
         else
             echo "sleep 11 && zapret.sh download-list && zapret.sh restart" >> /etc/rc.local
