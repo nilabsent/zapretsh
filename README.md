@@ -2,13 +2,13 @@
 
 Вариант альтернативного скрипта запуска утилиты `nfqws` проекта <a href="https://github.com/bol-van/zapret">**zapret**</a>
 
-Изначально написан для работы с прошивкой <a href="https://gitlab.com/hadzhioglu/padavan-ng">**padavan-ng**</a>, но потом применение было расширено до <a href="https://openwrt.org/">**OpenWRT**</a> и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
+Изначально написан для работы с прошивкой <a href="https://gitlab.com/hadzhioglu/padavan-ng">**padavan-ng**</a>, но потом применение было расширено до <a href="https://openwrt.org/">OpenWRT</a> и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
 
 Поддерживается работа на основе встроенных в `nfqws` методов autohostlist/hostlist с использованием правил iptables/nftables. `ipset` не применяется.
 
 ## Установка
 
-Для установки в Linux или <a href="https://openwrt.org/">**OpenWRT**</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.zip">**zapretsh**</a>, распаковать и запустить от прав администратора `install.sh`
+Для установки в Linux или <a href="https://openwrt.org/">OpenWRT</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.zip">zapretsh</a>, распаковать и запустить от прав администратора `install.sh`
 Для полного удаления запустить от прав администратора `uninstall.sh`
 
 В современных версиях десктопных дистрибутивов Linux скорее всего нужные пакеты для работы сервиса будут уже установлены. Если нет, то проверьте наличие следующих/похожих пакетов: `curl libnetfilter-conntrack libnetfilter-queue`
@@ -35,13 +35,13 @@
 - перечитать списки сайтов в файлах и обновить правила iptables/nftables: `zapret.sh reload`
 - применить правила iptables/nftables: `zapret.sh firewall-start`
 - удалить правила iptables/nftables: `zapret.sh firewall-stop`
-- скачать файл `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">**zapret**</a>: `zapret.sh download-nfqws`
-- скачать список доменов из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">**Re-filter-lists**</a>: `zapret.sh download-list`
+- скачать файл `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">zapret</a>: `zapret.sh download-nfqws`
+- скачать список доменов из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">Re-filter-lists</a>: `zapret.sh download-list`
 - скачать и nfqws и список доменов: `zapret.sh download`
 
 ## Фильтрация по именам доменов
 
-Поведение аналогично оригинальным скриптам <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#фильтрация-по-именам-доменов">**zapret**</a>
+Поведение аналогично оригинальным скриптам <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#фильтрация-по-именам-доменов">zapret</a>
 
 Файлы списков и их расположение (для прошивки **padavan** пути к файлам вместо `/etc` будут начинаться с `/etc/storage`):
 - `/etc/zapret/user.list` - список хостов для фильтрации, формируется пользователем вручную.
@@ -62,7 +62,7 @@
 
 ## Стратегии фильтрации
 
-Поведение почти аналогично <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#множественные-стратегии">**zapret**</a> за исключением того, что стратегии помещаются не в переменные, а записываются в файл `/etc/zapret/strategy` ( **padavan**: `/etc/storage/zapret/strategy` ) для более простого (на мой взгляд) редактирования.
+Поведение почти аналогично <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#множественные-стратегии">zapret</a> за исключением того, что стратегии помещаются не в переменные, а записываются в файл `/etc/zapret/strategy` ( **padavan:** `/etc/storage/zapret/strategy` ) для более простого (на мой взгляд) редактирования.
 
 <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#nfqws">Справка по ключам утилиты nfqws для написания стратегий</a>
 
@@ -113,7 +113,7 @@
 
 ## Файл конфигурации
 
-За конфигурацию `zapret.sh` отвечает файл `/etc/zapret/config` ( **padavan**: `/etc/storage/zapret/config` ).
+За конфигурацию `zapret.sh` отвечает файл `/etc/zapret/config` ( **padavan:** `/etc/storage/zapret/config` ).
 
 Содержит следующие параметры:
 - `ISP_INTERFACE` - интерфейс, трафик на котором будет помечаться для обработки в `nfqws`. По умолчанию значение отсутствует, так как определяется скриптом `zapret.sh` автоматически при старте через маршрут по умолчанию. Можно вручную указать трафик каких интерфейсов обрабатывать: через запятую `eth0,eth2,eth01` либо через пробел взяв в кавычки `"eth0 eth2 eth01"`
