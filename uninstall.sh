@@ -25,6 +25,7 @@ case "$ID" in
         sed -i '/zapret.sh download-list/d' /etc/rc.local
         uci -q del firewall.zapret && uci commit
         remove_zapret
+        /etc/init.d/firewall restart >/dev/null 2>&1
     ;;
     *)
         if [ -f /etc/systemd/system/zapret.service ]; then

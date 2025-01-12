@@ -22,11 +22,11 @@ case "$ID" in
         install_zapret
         cp -rf ./openwrt/etc /
         chmod +x /etc/init.d/zapret
-        sed -i '/zapret.sh download-list/d' /etc/rc.local
+        sed -i '/zapret.sh/d' /etc/rc.local
         if grep -q "exit 0" /etc/rc.local; then
-            sed -i '/exit 0/i zapret.sh download-list && zapret.sh restart' /etc/rc.local
+            sed -i '/exit 0/i sleep 11 && zapret.sh download-list && zapret.sh restart' /etc/rc.local
         else
-            echo "zapret.sh download-list && zapret.sh restart" >> /etc/rc.local
+            echo "sleep 11 && zapret.sh download-list && zapret.sh restart" >> /etc/rc.local
         fi
         /etc/init.d/zapret enable
         /etc/init.d/zapret start
