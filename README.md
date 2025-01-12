@@ -1,15 +1,15 @@
 # zapret.sh
 
-Вариант альтернативного скрипта запуска утилиты `nfqws` проекта **zapret** https://github.com/bol-van/zapret
+Вариант альтернативного скрипта запуска утилиты `nfqws` проекта <a href="https://github.com/bol-van/zapret">**zapret**</a>
 
-Изначально написан для работы с прошивкой **padavan** (присутствует в репозитории https://gitlab.com/hadzhioglu/padavan-ng ), но потом применение было расширено до <a href="https://openwrt.org/">OpenWRT</a> и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
+Изначально написан для работы с прошивкой <a href="https://gitlab.com/hadzhioglu/padavan-ng">**padavan-ng**</a>, но потом применение было расширено до <a href="https://openwrt.org/">**OpenWRT**</a> и дистрибутивов Linux (тестировался на Mint (Ubuntu), Debian, Arch).
 
 Поддерживается работа на основе встроенных в `nfqws` методов autohostlist/hostlist с использованием правил iptables/nftables. `ipset` не применяется.
 
 ## Установка
 
-Для установки в Linux или OpenWRT скачать репозиторий и запустить от прав администратора: `install.sh`
-Для полного удаления запустить от прав администратора: `uninstall.sh`
+Для установки в Linux или <a href="https://openwrt.org/">**OpenWRT**</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.zip">**zapretsh**</a>, распаковать и запустить от прав администратора `install.sh`
+Для полного удаления запустить от прав администратора `uninstall.sh`
 
 В современных версиях десктопных дистрибутивов Linux скорее всего нужные пакеты для работы сервиса будут уже установлены. Если нет, то проверьте наличие следующих/похожих пакетов: `curl libnetfilter-conntrack libnetfilter-queue`
 
@@ -35,13 +35,13 @@
 - перечитать списки сайтов в файлах и обновить правила iptables/nftables: `zapret.sh reload`
 - применить правила iptables/nftables: `zapret.sh firewall-start`
 - удалить правила iptables/nftables: `zapret.sh firewall-stop`
-- скачать файл `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">zapret</a>: `zapret.sh download-nfqws`
-- скачать список доменов из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">Re-filter-lists</a>: `zapret.sh download-list`
+- скачать файл `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">**zapret**</a>: `zapret.sh download-nfqws`
+- скачать список доменов из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">**Re-filter-lists**</a>: `zapret.sh download-list`
 - скачать и nfqws и список доменов: `zapret.sh download`
 
 ## Фильтрация по именам доменов
 
-Поведение аналогично оригинальным скриптам <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#фильтрация-по-именам-доменов">zapret</a>
+Поведение аналогично оригинальным скриптам <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#фильтрация-по-именам-доменов">**zapret**</a>
 
 Файлы списков и их расположение (для прошивки **padavan** пути к файлам вместо `/etc` будут начинаться с `/etc/storage`):
 - `/etc/zapret/user.list` - список хостов для фильтрации, формируется пользователем вручную.
@@ -62,7 +62,7 @@
 
 ## Стратегии фильтрации
 
-Поведение почти аналогично <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#множественные-стратегии">zapret</a> за исключением того, что стратегии помещаются не в переменные, а записываются в файл `/etc/zapret/strategy` ( **padavan**: `/etc/storage/zapret/strategy` ) для более простого (на мой взгляд) редактирования.
+Поведение почти аналогично <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#множественные-стратегии">**zapret**</a> за исключением того, что стратегии помещаются не в переменные, а записываются в файл `/etc/zapret/strategy` ( **padavan**: `/etc/storage/zapret/strategy` ) для более простого (на мой взгляд) редактирования.
 
 <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#nfqws">Справка по ключам утилиты nfqws для написания стратегий</a>
 
@@ -94,22 +94,22 @@
 Подробный разбор:
 - `--filter-tcp=80` - фильтровать http трафик
 - стратегия фильтрации
-- макрос списков хостов
+- макрос списков хостов, включено автодобавление заблокированных хостов
 - `--new` - **обязательный** разделитель **между** стратегиями
 - `--filter-tcp=443` - фильтровать https трафик
 - стратегия фильтрации
-- далее указывается <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для TLS
-- макрос списков хостов
+- указывается <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для TLS
+- макрос списков хостов, включено автодобавление заблокированных хостов
 - `--new` - **обязательный** разделитель **между** стратегиями
 - `--filter-udp=443` - фильтровать quic трафик
 - стратегия фильтрации
-- далее указывается <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для QUIC
-- макрос списков хостов. Для quic всегда выбирайте `<HOSTLIST_NOAUTO>`
+- указывается <a href="https://github.com/bol-van/zapret?tab=readme-ov-file#реассемблинг">fake-файл</a> из каталога `/usr/share/zapret/fake` для QUIC
+- макрос списков хостов. Автодобавление выключено. Для quic всегда выбирайте `<HOSTLIST_NOAUTO>`
 - `--new` - **обязательный** разделитель **между** стратегиями
 - `--filter-udp=50000-50099` - фильтрация голосового трафика Discord
 - стратегия фильтрации
 
-После внесения изменений в файл стратегий необходимо перезапустить сервис `zapret.sh restart`
+После изменения стратегий необходимо перезапустить сервис: `zapret.sh restart`
 
 ## Файл конфигурации
 
@@ -123,4 +123,4 @@
 - `NFQUEUE_NUM` - номер очереди в правилах iptables/nftables для `nfqws`. Значение по умолчанию `200`
 - `LOG_LEVEL` - логирование работы `nfqws` в `syslog`. Значения: `1` включить, `0` выключить
 
-После изменения конфигурации и применения новых параметров сервис нужно перезапустить: `zapret.sh restart`
+После изменения конфигурации необходимо перезапустить сервис: `zapret.sh restart`
