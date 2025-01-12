@@ -5,11 +5,20 @@ cd $(dirname $0)
 
 [ -f /etc/os-release ] && . /etc/os-release
 
+LAZY_MODE="$1"
+
 install_zapret(){
     cp -rf ./zapret/usr /
     chmod +x /usr/bin/zapret.sh
     /usr/bin/zapret.sh download-nfqws && mv /tmp/nfqws /usr/bin && chmod +x /usr/bin/nfqws
-    /usr/bin/zapret.sh download-list
+    [ "$LAZY_MODE" ] || /usr/bin/zapret.sh download-list
+}
+
+lazy_mode(){
+    [ "$LAZY_MODE" ] || return
+    sed -i 's/<HOSTLIST>/<HOSTLIST_NOAUTO>/g' /etc/zapret/strategy
+    > /etc/zapret/auto.list
+    > /etc/zapret/user.list
 }
 
 case "$ID" in
@@ -28,14 +37,16 @@ case "$ID" in
         else
             echo "sleep 11 && zapret.sh download-list && zapret.sh restart" >> /etc/rc.local
         fi
+        lazy_mode
         /etc/init.d/zapret enable
-        /etc/init.d/zapret start
+        /etc/init.d/zapret restart
     ;;
     *)
         install_zapret
         [ -s /tmp/filter.list ] && mv /tmp/filter.list /etc/zapret/auto.list
         [ -d /etc/systemd ] || exit
         cp -rf ./linux/etc /
+        lazy_mode
         systemctl enable zapret.service
         systemctl restart zapret.service
     ;;
