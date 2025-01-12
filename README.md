@@ -9,6 +9,7 @@
 ## Установка
 
 Для установки в Linux или <a href="https://openwrt.org/">OpenWRT</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.zip">zapretsh</a>, распаковать и запустить от прав администратора `install.sh`
+
 Для полного удаления запустить от прав администратора `uninstall.sh`
 
 В современных версиях десктопных дистрибутивов Linux скорее всего нужные пакеты для работы сервиса будут уже установлены. Если нет, то проверьте наличие следующих/похожих пакетов: `curl libnetfilter-conntrack libnetfilter-queue`
