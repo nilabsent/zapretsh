@@ -303,7 +303,7 @@ system_config() {
 }
 
 start_service() {
-  [ -f "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found"
+  [ -s "$NFQWS_BIN" -a -x "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found or invalid"
   if is_running; then
     echo "service nfqws is already running"
     return
@@ -337,20 +337,23 @@ reload_service() {
 download_nfqws() {
   cd /tmp
 
-  ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|arm|i386|i686|x86_64')
+  ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|arm|rlx|i386|i686|x86_64')
   case "$ARCH" in
+    rlx)
+      ARCH="lexra"
+    ;;
     mips)
       ARCH="mips32r1-msb"
       grep -qE 'system type.*(MediaTek|Ralink)' /proc/cpuinfo && ARCH="mips32r1-lsb"
-      ;;
+    ;;
     mipsel)
       ARCH="mips32r1-lsb"
-      ;;
+    ;;
     i386|i686)
       ARCH="x86"
-      ;;
+    ;;
   esac
-  [ -n "$ARCH" ] || exit
+  [ -n "$ARCH" ] || error "cpu arch unknown"
 
   if [ -f /usr/bin/curl ]; then
     URL=$(curl -s --connect-timeout 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' |\
