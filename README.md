@@ -8,7 +8,7 @@
 
 ## Установка
 
-Для **установки** в Linux или <a href="https://openwrt.org/">OpenWRT</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.zip">zapretsh</a>, распаковать и запустить от прав администратора `install.sh`
+Для **установки** в Linux или <a href="https://openwrt.org/">OpenWRT</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz">zapretsh</a>, распаковать и запустить от прав администратора `install.sh`
 
 Для полного **удаления** запустить от прав администратора `uninstall.sh`
 
@@ -130,4 +130,5 @@
 ## Поддержка flow offloading OpenWRT
 
 Включение/выключение flow offloading поддерживается из системных настроек OpenWRT, дополнительно ничего активировать не нужно: скрипт `zapret.sh` при старте сам определит состояние offloading и поправит правила iptables, чтобы они не мешали работе фильтрации.
+
 При **ручной остановке** `zapret.sh` для последующей работы flow offloading и ускорения forward-трафика нужно **перезапустить firewall**, чтобы восстановились системные правила в iptables.
