@@ -17,7 +17,7 @@ remove_zapret(){
 case "$ID" in
     openwrt)
         if [ -f /etc/init.d/zapret ]; then
-            /etc/init.d/zapret stop
+            /etc/init.d/zapret stop >/dev/null 2>&1
             /etc/init.d/zapret disable
         fi
         rm -f /etc/init.d/zapret

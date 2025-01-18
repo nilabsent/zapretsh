@@ -21,13 +21,19 @@ lazy_mode(){
     > /etc/zapret/user.list
 }
 
+install_pkg(){
+    PKG_LIST=$(opkg list-installed)
+    PKG_DEP="curl iptables-mod-nfqueue iptables-mod-conntrack-extra"
+    nft -v >/dev/null 2>&1 && PKG_DEP="curl kmod-nft-queue kmod-nfnetlink-queue"
+    PKG=$( for i in $PKG_DEP; do
+        echo "$PKG_LIST" | grep -Eqo "^$i " || echo $i
+    done )
+    [ "$PKG" ] && ( opkg update && opkg install $PKG )
+}
+
 case "$ID" in
     openwrt)
-        opkg update && if nft -v >/dev/null 2>&1; then
-            opkg install curl kmod-nft-queue kmod-nfnetlink-queue
-        else
-            opkg install curl iptables-mod-nfqueue iptables-mod-conntrack-extra
-        fi
+        install_pkg
         install_zapret
         cp -rf ./openwrt/etc /
         chmod +x /etc/init.d/zapret
@@ -39,7 +45,7 @@ case "$ID" in
         fi
         lazy_mode
         /etc/init.d/zapret enable
-        /etc/init.d/zapret restart
+        /etc/init.d/zapret start
     ;;
     *)
         install_zapret
@@ -48,6 +54,6 @@ case "$ID" in
         cp -rf ./linux/etc /
         lazy_mode
         systemctl enable zapret.service
-        systemctl restart zapret.service
+        systemctl start zapret.service
     ;;
 esac
