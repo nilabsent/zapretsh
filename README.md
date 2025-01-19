@@ -8,7 +8,12 @@
 
 ## Установка
 
-Для **установки** в Linux или <a href="https://openwrt.org/">OpenWRT</a>: скачать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz">zapretsh</a>, распаковать и запустить от прав администратора `install.sh`
+Для **установки** в Linux или <a href="https://openwrt.org/">OpenWRT</a> необходимо скачать и распаковать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz">zapretsh</a> любым доступным способом, например:
+
+- `cd /tmp; curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz; cd zapretsh-main`
+- `cd /tmp; wget -q https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz -O- | tar xz; cd zapretsh-main`
+
+и запустить от прав администратора `install.sh`
 
 Для полного **удаления** запустить от прав администратора `uninstall.sh`
 
