@@ -39,9 +39,9 @@ case "$ID" in
         chmod +x /etc/init.d/zapret
         sed -i '/zapret.sh/d' /etc/rc.local
         [ "$LAZY_MODE" ] || if grep -q "exit 0" /etc/rc.local; then
-            sed -i '/exit 0/i sleep 11 && zapret.sh download-list && zapret.sh restart' /etc/rc.local
+            sed -i '/exit 0/i sleep 11 && zapret.sh download-list' /etc/rc.local
         else
-            echo "sleep 11 && zapret.sh download-list && zapret.sh restart" >> /etc/rc.local
+            echo "sleep 11 && zapret.sh download-list" >> /etc/rc.local
         fi
         lazy_mode
         /etc/init.d/zapret enable
