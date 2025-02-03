@@ -22,13 +22,22 @@ lazy_mode(){
 }
 
 install_pkg(){
-    PKG_LIST=$(opkg list-installed)
+    if [ -f /usr/bin/apk ]; then 
+        PKG_LIST=$(apk list --installed --manifest)
+    else
+        PKG_LIST=$(opkg list-installed)
+    fi
     PKG_DEP="curl iptables-mod-nfqueue iptables-mod-conntrack-extra"
     nft -v >/dev/null 2>&1 && PKG_DEP="curl kmod-nft-queue kmod-nfnetlink-queue"
     PKG=$( for i in $PKG_DEP; do
         echo "$PKG_LIST" | grep -Eqo "^$i " || echo $i
     done )
-    [ "$PKG" ] && ( opkg update && opkg install $PKG )
+    [ "$PKG" ] || return
+    if [ -f /usr/bin/apk ]; then
+        apk update && apk add $PKG )
+    else
+        opkg update && opkg install $PKG
+    fi
 }
 
 case "$ID" in
