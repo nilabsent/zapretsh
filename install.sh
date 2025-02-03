@@ -34,7 +34,7 @@ install_pkg(){
     done )
     [ "$PKG" ] || return
     if [ -f /usr/bin/apk ]; then
-        apk update && apk add $PKG )
+        apk update && apk add $PKG
     else
         opkg update && opkg install $PKG
     fi
