@@ -52,7 +52,7 @@ USER="nobody"
 ###
 
 log() {
-  [ -n "$@" ] || return
+  [ -n "$*" ] || return
   echo "$@"
   local pid
   [ -f "$PIDFILE" ] && pid="[$(cat "$PIDFILE" 2>/dev/null)]"
