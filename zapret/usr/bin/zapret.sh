@@ -322,11 +322,11 @@ start_service() {
   echo "$res" | grep -iv "loading" | while read i; do
     log "$i"
   done
-  
+
   if is_running; then 
     if [ -s "$START_SCRIPT" -a -x "$START_SCRIPT" ]; then
       . "$START_SCRIPT"
-    elif [ -n "$STOP_SCRIPT" ]; then
+    elif [ -n "$START_SCRIPT" ]; then
       error "$START_SCRIPT: not found or invalid"
     fi
   fi
@@ -336,14 +336,14 @@ stop_service() {
   firewall_stop
   if killall -q -s 15 $(basename "$NFQWS_BIN"); then
     log "service nfqws stopped"
-	
+
     if [ -s "$STOP_SCRIPT" -a -x "$STOP_SCRIPT" ]; then
       . "$STOP_SCRIPT"
     elif [ -n "$STOP_SCRIPT" ]; then
       error "$STOP_SCRIPT: not found or invalid"
     fi
   fi
-  
+
   rm -f "$PIDFILE"
 }
 
