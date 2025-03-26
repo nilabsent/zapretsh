@@ -48,8 +48,7 @@ UDP_PORTS=443,50000:50099
 NFQUEUE_NUM=200
 LOG_LEVEL=0
 USER="nobody"
-START_SCRIPT=
-STOP_SCRIPT=
+POST_SCRIPT=
 
 ###
 
@@ -320,28 +319,11 @@ start_service() {
   echo "$res" | grep -iv "loading" | while read i; do
     log "$i"
   done
-
-  if is_running; then
-    if [ -s "$START_SCRIPT" -a -x "$START_SCRIPT" ]; then
-      . "$START_SCRIPT"
-    elif [ -n "$START_SCRIPT" ]; then
-      error "$START_SCRIPT: not found or invalid"
-    fi
-  fi
 }
 
 stop_service() {
   firewall_stop
-  if killall -q -s 15 $(basename "$NFQWS_BIN"); then
-    log "service nfqws stopped"
-
-    if [ -s "$STOP_SCRIPT" -a -x "$STOP_SCRIPT" ]; then
-      . "$STOP_SCRIPT"
-    elif [ -n "$STOP_SCRIPT" ]; then
-      error "$STOP_SCRIPT: not found or invalid"
-    fi
-  fi
-
+  killall -q -s 15 $(basename "$NFQWS_BIN") && log "service nfqws stopped"
   rm -f "$PIDFILE"
 }
 
@@ -450,3 +432,5 @@ case "$1" in
   *)
     echo "Usage: $0 {start|stop|restart|download|download-nfqws|download-list|status}"
 esac
+
+[ -s "$POST_SCRIPT" -a -x "$POST_SCRIPT" ] && . "$POST_SCRIPT"
