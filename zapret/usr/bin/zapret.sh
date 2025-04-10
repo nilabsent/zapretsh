@@ -14,12 +14,13 @@ NFQWS_BIN_GIT="/tmp/nfqws"
 ETC_DIR="/etc"
 
 # padavan
-[ -d "/etc_ro" ] && ETC_DIR="/etc/storage"
+[ -d "/etc_ro" -a -d "/etc/storage" ] && ETC_DIR="/etc/storage"
 
 CONFDIR="${ETC_DIR}/zapret"
 CONFDIR_EXAMPLE="/usr/share/zapret"
 CONFFILE="$CONFDIR/config"
 PIDFILE="/var/run/zapret.pid"
+POST_SCRIPT="$CONFDIR/post_script.sh"
 
 HOSTLIST_DOMAINS="https://github.com/1andrevich/Re-filter-lists/releases/latest/download/domains_all.lst"
 
@@ -42,13 +43,12 @@ HOSTLIST="
 ### default config
 
 ISP_INTERFACE=
-IPV6_ENABLED=0
+IPV6_ENABLED=1
 TCP_PORTS=80,443
 UDP_PORTS=443,50000:50099
 NFQUEUE_NUM=200
 LOG_LEVEL=0
 USER="nobody"
-POST_SCRIPT=
 
 ###
 

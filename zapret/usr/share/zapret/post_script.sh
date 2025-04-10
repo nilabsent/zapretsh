@@ -5,17 +5,20 @@
 
 post_start()
 {
-    log "post start actions"
+    # log "post start actions"
+    return 0
 }
 
 post_stop()
 {
-    log "post stop actions"
+    # log "post stop actions"
+    return 0
 }
 
 post_reload()
 {
-    log "post reload actions"
+    # log "post reload actions"
+    return 0
 }
 
 case "$1" in
