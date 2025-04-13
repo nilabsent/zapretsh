@@ -70,16 +70,16 @@ if id -u >/dev/null 2>&1; then
 fi
 
 # padavan: possibility of running nfqws from usb-flash drive
-[ -d "/etc_ro" ] && for i in "a1" "a2" "a3" "a4" "b1" "b2" "b3" "b4" ; do
-    disk_path="/media/AiDisk_${i}"
-    if [ -d "${disk_path}" ] && grep -q ${disk_path} /proc/mounts ; then
-        if [ -f "${disk_path}$NFQWS_BIN_OPT" ]; then
-            NFQWS_BIN="${disk_path}$NFQWS_BIN_OPT"
-            chmod +x "$NFQWS_BIN"
-            break
-        fi
-    fi
-done
+if [ -d "/etc_ro" ] ; then
+    opt_dev=$(mount | grep 'on /opt' | cut -d ' ' -f1)
+	if [ -n "$opt_dev" ] ; then
+		disk_path="$(mount | grep $opt_dev | grep -v /opt | cut -d ' ' -f3)"
+		if [ -d "${disk_path}" -a -f "${disk_path}$NFQWS_BIN_OPT" ] ; then
+			NFQWS_BIN="${disk_path}$NFQWS_BIN_OPT"
+			chmod +x "$NFQWS_BIN"
+		fi
+	fi
+fi
 
 [ -s "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
 
