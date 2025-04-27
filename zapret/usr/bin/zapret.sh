@@ -44,8 +44,6 @@ HOSTLIST="
 
 ISP_INTERFACE=
 IPV6_ENABLED=1
-TCP_PORTS=80,443
-UDP_PORTS=443,50000:50099
 NFQUEUE_NUM=200
 LOG_LEVEL=0
 USER="nobody"
@@ -86,7 +84,9 @@ done
 [ -d "$CONFDIR" ] || mkdir -p "$CONFDIR" || exit 1
 # copy all non-existent config files to storage except fake dir
 [ -d "$CONFDIR_EXAMPLE" ] && false | cp -i "${CONFDIR_EXAMPLE}"/* "$CONFDIR" >/dev/null 2>&1
+
 [ -f "$CONFFILE" ] && . "$CONFFILE"
+
 for i in user.list exclude.list auto.list strategy config; do
   [ -f ${ETC_DIR}/zapret/$i ] || touch ${ETC_DIR}/zapret/$i || exit 1
 done
@@ -99,18 +99,30 @@ unset NFT
 nft -v >/dev/null 2>&1 && NFT=1
 
 _ISP_IF=$(
-  sed -nre 's/^([^\t]+)\t00000000\t[0-9A-F]{8}\t[0-9A-F]{4}\t[0-9]+\t[0-9]+\t[0-9]+\t00000000.*$/\1/p' /proc/net/route | xargs echo "$ISP_INTERFACE," | tr " " "\n" | tr "," "\n" | sort -u
+    awk -v i="$ISP_INTERFACE" '$2 == 0 && $8 == 0 {print $1} END {print i}' /proc/net/route \
+    | tr " " "\n" | tr "," "\n" | sort -u
 );
 
 _ISP_IF6=$(
-  sed -nre 's/^00000000000000000000000000000000 00 [0-9a-f]{32} [0-9a-f]{2} [0-9a-f]{32} [0-9a-f]{8} [0-9a-f]{8} [0-9a-f]{8} [0-9a-f]{8} +(.*)$/\1/p' /proc/net/ipv6_route | grep -v '^lo$' | xargs echo "$ISP_INTERFACE," | tr " " "\n" | tr "," "\n" | sort -u
+    awk -v i="$ISP_INTERFACE" '$1 == 0 && $2 == 0 && $10 != "lo" {print $10} END {print i}' /proc/net/ipv6_route \
+    | tr " " "\n" | tr "," "\n" | sort -u
 );
 
-_MANGLE_RULES() ( echo "
--A PREROUTING  -i $IFACE -p tcp -m multiport --sports $TCP_PORTS -m connbytes --connbytes-dir=reply    --connbytes-mode=packets --connbytes 1:3 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass
--A POSTROUTING -o $IFACE -p tcp -m multiport --dports $TCP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass
--A POSTROUTING -o $IFACE -p udp -m multiport --dports $UDP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass
-")
+_get_ports()
+{
+    cat ${CONFDIR}/strategy | grep -Eo "filter-$1=[0-9,-]+" \
+    | cut -d '=' -f2 | tr ',' '\n' | sort -u \
+    | sed -ne 'H;${x;s/\n/,/g;s/-/:/g;s/^,//;p;}'
+}
+
+TCP_PORTS=$(_get_ports tcp)
+UDP_PORTS=$(_get_ports udp)
+
+_MANGLE_RULES() {
+    [ "$TCP_PORTS" ] && echo "-A PREROUTING  -i $IFACE -p tcp -m multiport --sports $TCP_PORTS -m connbytes --connbytes-dir=reply    --connbytes-mode=packets --connbytes 1:3 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
+    [ "$TCP_PORTS" ] && echo "-A POSTROUTING -o $IFACE -p tcp -m multiport --dports $TCP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
+    [ "$UDP_PORTS" ] && echo "-A POSTROUTING -o $IFACE -p udp -m multiport --dports $UDP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
+}
 
 is_running() {
   [ -z "$(pgrep `basename "$NFQWS_BIN"` 2>/dev/null)" ] && return 1
