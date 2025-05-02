@@ -1,26 +1,21 @@
 # All arguments here: https://github.com/bol-van/zapret
 
 --filter-tcp=80,443
-### desync + splitpos
-#--dpi-desync=fake,multisplit --dpi-desync-split-pos=1,midsld
-#--dpi-desync=fake,fakedsplit --dpi-desync-split-pos=1,midsld
-#--dpi-desync=fake,split2 --dpi-desync-split-pos=1,midsld
-#--dpi-desync=fake,disorder2 --dpi-desync-split-pos=1,midsld
---dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld
-#--dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2
-#--dpi-desync=fake,fakedsplit --dpi-desync-split-pos=method+2
-#--dpi-desync=fake,split2 --dpi-desync-split-pos=method+2
-#--dpi-desync=fake,disorder2 --dpi-desync-split-pos=method+2
-#--dpi-desync=fake,multidisorder --dpi-desync-split-pos=method+2
+#--dpi-desync=fake,multisplit
+#--dpi-desync=fake,fakedsplit
+#--dpi-desync=fake,split2
+#--dpi-desync=fake,disorder2
+--dpi-desync=fake,multidisorder
 
-### common rules
+--dpi-desync-split-pos=1,midsld
+#--dpi-desync-split-pos=method+2
+
 #--dpi-desync-ttl=0
---dpi-desync-repeats=6
-#--dpi-desync-fooling=md5sig
+--dpi-desync-repeats=3
 --dpi-desync-fooling=badseq,md5sig
 
 --dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
-#--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
 <HOSTLIST>
 
 --new
