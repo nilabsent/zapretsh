@@ -110,7 +110,7 @@ _ISP_IF6=$(
 
 _get_ports()
 {
-    cat ${CONFDIR}/strategy | grep -Eo "filter-$1=[0-9,-]+" \
+    grep -v "^#" ${CONFDIR}/strategy | grep -Eo "filter-$1=[0-9,-]+" \
     | cut -d '=' -f2 | tr ',' '\n' | sort -u \
     | sed -ne 'H;${x;s/\n/,/g;s/-/:/g;s/^,//;p;}'
 }
@@ -161,7 +161,7 @@ startup_args() {
 
   [ "$LOG_LEVEL" = "1" ] && args="--debug=syslog $args"
 
-  NFQWS_ARGS="$(grep -v '^#' ${ETC_DIR}/zapret/strategy)"
+  NFQWS_ARGS="$(grep -v '^#' ${CONFDIR}/strategy)"
   NFQWS_ARGS=$(replace_str "$HOSTLIST_MARKER" "$HOSTLIST" "$NFQWS_ARGS")
   NFQWS_ARGS=$(replace_str "$HOSTLIST_NOAUTO_MARKER" "$HOSTLIST_NOAUTO" "$NFQWS_ARGS")
   echo "$args $NFQWS_ARGS"
@@ -250,9 +250,9 @@ nftables_start() {
   nft add chain inet zapret pre "{type filter hook prerouting priority filter;}"
 
   for IFACE in $(echo "$_ISP_IF$_ISP_IF6" | sort -u); do
-    nft add rule inet zapret post oifname $IFACE meta mark and 0x40000000 == 0 tcp dport "{$TCP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
-    nft add rule inet zapret post oifname $IFACE meta mark and 0x40000000 == 0 udp dport "{$UDP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
-    nft add rule inet zapret pre iifname $IFACE tcp sport "{$TCP_PORTS}" ct reply packets 1-3 queue num $NFQUEUE_NUM bypass
+    [ "$TCP_PORTS" ] && nft add rule inet zapret post oifname $IFACE meta mark and 0x40000000 == 0 tcp dport "{$TCP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
+    [ "$UDP_PORTS" ] && nft add rule inet zapret post oifname $IFACE meta mark and 0x40000000 == 0 udp dport "{$UDP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
+    [ "$TCP_PORTS" ] && nft add rule inet zapret pre iifname $IFACE tcp sport "{$TCP_PORTS}" ct reply packets 1-3 queue num $NFQUEUE_NUM bypass
   done
 }
 
