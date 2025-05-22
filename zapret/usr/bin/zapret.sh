@@ -49,7 +49,8 @@ USER="nobody"
 
 ###
 
-log() {
+log()
+{
     [ -n "$*" ] || return
     echo "$@"
     local pid
@@ -57,7 +58,8 @@ log() {
     logger -t "zapret$pid" "$@"
 }
 
-error() {
+error()
+{
     log "$@"
     exit 1
 }
@@ -102,12 +104,17 @@ if [ -x "/usr/sbin/nvram" ]; then
     [ "$(nvram get zapret_log)" ] && LOG_LEVEL="$(nvram get zapret_log)"
 fi
 
+_get_if_default()
+{
+    ip -$1 route show default | grep via | sed -r 's/^.*default.*via.* dev ([^ ]+).*$/\1/' | head -n1
+}
+
 if [ "$ISP_INTERFACE" ]; then
     ISP_IF=$(echo "$ISP_INTERFACE" | tr -d " " | tr "," "\n" | sort -u);
 else
-    ISP_IF4=$(awk '$2 == 0 && $8 == 0 {print $1}' /proc/net/route | sort -u);
-    ISP_IF6=$(awk '$1 == 0 && $2 == 0 && $10 != "lo" {print $10}' /proc/net/ipv6_route | sort -u);
-    ISP_IF=$(printf "%s\n%s" "$ISP_IF4" "$ISP_IF6" | sort -u)
+    ISP_IF4=$(_get_if_default 4);
+    ISP_IF6=$(_get_if_default 6);
+    ISP_IF=$(printf "%s\n%s" "${ISP_IF4}" "${ISP_IF6}" | sort -u)
 fi
 
 _get_ports()
@@ -120,19 +127,22 @@ _get_ports()
 TCP_PORTS=$(_get_ports tcp)
 UDP_PORTS=$(_get_ports udp)
 
-_MANGLE_RULES() {
+_MANGLE_RULES()
+{
     [ "$TCP_PORTS" ] && echo "-A PREROUTING  -i $IFACE -p tcp -m multiport --sports $TCP_PORTS -m connbytes --connbytes-dir=reply    --connbytes-mode=packets --connbytes 1:3 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
     [ "$TCP_PORTS" ] && echo "-A POSTROUTING -o $IFACE -p tcp -m multiport --dports $TCP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
     [ "$UDP_PORTS" ] && echo "-A POSTROUTING -o $IFACE -p udp -m multiport --dports $UDP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
 }
 
-is_running() {
+is_running()
+{
     [ -z "$(pgrep `basename "$NFQWS_BIN"` 2>/dev/null)" ] && return 1
     [ ! -f "$PIDFILE" ] && return 1
     return 0
 }
 
-status_service() {
+status_service()
+{
     if is_running; then
         echo "service nfqws is running"
         exit 0
@@ -142,7 +152,8 @@ status_service() {
     fi
 }
 
-kernel_modules() {
+kernel_modules()
+{
     # "modprobe -a" may not supported
     for i in nfnetlink_queue xt_connbytes xt_NFQUEUE nft-queue; do
         modprobe -q $i >/dev/null 2>&1
@@ -157,7 +168,8 @@ replace_str()
     echo "$@" | tr '\n' ' ' | sed "s/$a/$b/g; s/[ \t]\{1,\}/ /g"
 }
 
-startup_args() {
+startup_args()
+{
     [ -f /tmp/filter.list ] || touch /tmp/filter.list
     local args="--user=$USER --qnum=$NFQUEUE_NUM"
 
@@ -169,20 +181,23 @@ startup_args() {
     echo "$args $NFQWS_ARGS"
 }
 
-offload_unset_rules() {
+offload_unset_rules()
+{
     eval "$(ip$1tables-save -t filter 2>/dev/null | grep "FORWARD.*forwarding_rule_zapret" | sed 's/^-A/ip$1tables -D/g')"
     ip$1tables -F forwarding_rule_zapret 2>/dev/null
     ip$1tables -X forwarding_rule_zapret 2>/dev/null
 }
 
-offload_stop() {
+offload_stop()
+{
     [ -n "$NFT" ] && return
     [ -n "$OPENWRT" ] || return
     offload_unset_rules
     offload_unset_rules 6
 }
 
-offload_set_rules() {
+offload_set_rules()
+{
     local HW_OFFLOAD FW_FORWARD
 
     [ "$(uci -q get firewall.@defaults[0].flow_offloading_hw)" = "1" ] && HW_OFFLOAD="--hw"
@@ -204,7 +219,8 @@ COMMIT
 EOF
 }
 
-offload_start() {
+offload_start()
+{
     [ -n "$NFT" ] && return
     # offloading is supported only in OpenWrt
     [ -n "$OPENWRT" ] || return
@@ -224,24 +240,28 @@ offload_start() {
     log "offloading rules updated"
 }
 
-nftables_stop() {
+nftables_stop()
+{
     [ -n "$NFT" ] || return
     nft delete table inet zapret 2>/dev/null
 }
 
-iptables_stop() {
+iptables_stop()
+{
     [ -n "$NFT" ] && return
     eval "$(iptables-save -t mangle 2>/dev/null | grep "queue-num $NFQUEUE_NUM " | sed 's/^-A/iptables -t mangle -D/g')"
     eval "$(ip6tables-save -t mangle 2>/dev/null | grep "queue-num $NFQUEUE_NUM " | sed 's/^-A/ip6tables -t mangle -D/g')"
 }
 
-firewall_stop() {
+firewall_stop()
+{
     nftables_stop
     iptables_stop
     offload_stop
 }
 
-nftables_start() {
+nftables_start()
+{
     [ -n "$NFT" ] || return
 
     UDP_PORTS=$(echo $UDP_PORTS | tr ":" "-")
@@ -258,7 +278,8 @@ nftables_start() {
     done
 }
 
-iptables_set_rules() {
+iptables_set_rules()
+{
     local FW_MANGLE
 
     [ "$1" == "6" ] && [ ! -d /proc/sys/net/ipv6 ] && return
@@ -275,7 +296,8 @@ COMMIT
 EOF
 }
 
-iptables_start() {
+iptables_start()
+{
     [ -n "$NFT" ] && return
 
     UDP_PORTS=$(echo $UDP_PORTS | tr "-" ":")
@@ -285,7 +307,8 @@ iptables_start() {
     iptables_set_rules 6
 }
 
-firewall_start() {
+firewall_start()
+{
     firewall_stop
 
     nftables_start
@@ -301,7 +324,8 @@ firewall_start() {
     offload_start
 }
 
-system_config() {
+system_config()
+{
     sysctl -w net.netfilter.nf_conntrack_checksum=0 >/dev/null 2>&1
     sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1 >/dev/null 2>&1
     [ -n "$OPENWRT" ] || return
@@ -315,7 +339,8 @@ system_config() {
     )
 }
 
-start_service() {
+start_service()
+{
     [ -s "$NFQWS_BIN" -a -x "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found or invalid"
     if is_running; then
         echo "service nfqws is already running"
@@ -335,19 +360,22 @@ start_service() {
     done
 }
 
-stop_service() {
+stop_service()
+{
     firewall_stop
     killall -q -s 15 $(basename "$NFQWS_BIN") && log "service nfqws stopped"
     rm -f "$PIDFILE"
 }
 
-reload_service() {
+reload_service()
+{
     is_running || return
     firewall_start
     kill -HUP $(cat "$PIDFILE")
 }
 
-download_nfqws() {
+download_nfqws()
+{
     cd /tmp
 
     ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|arm|rlx|i386|i686|x86_64')
@@ -390,7 +418,8 @@ download_nfqws() {
     rm -f zapret.tar.gz
 }
 
-download_list() {
+download_list()
+{
     local LIST="/tmp/filter.list"
     if [ -f /usr/bin/curl ]; then
         curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $LIST || error "unable to download $HOSTLIST_DOMAINS"
@@ -400,7 +429,8 @@ download_list() {
     [ -s "$LIST" ] && log "downloaded successfully: $HOSTLIST_DOMAINS"
 }
 
-download() {
+download()
+{
     download_nfqws
     download_list
 }
