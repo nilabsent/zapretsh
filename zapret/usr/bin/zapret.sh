@@ -355,7 +355,9 @@ start_service()
     firewall_start
     system_config
 
-    echo "$res" | grep -iv "loading" | while read i; do
+    echo "$res" \
+    | grep -Eiv "^(loading|running as|binding|unbinding|opening|setting|initializing)" \
+    | while read i; do
         log "$i"
     done
 }
@@ -402,10 +404,10 @@ download_nfqws()
         [ -n "$URL" ] || error "unable to get link to nfqws"
         curl -sSL --connect-timeout 5 $URL -o zapret.tar.gz || error "unable to download $URL"
     else
-        URL=$(wget -q -T 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
+        URL=$(wget -q -t5 -T10 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
             grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
         [ -n "$URL" ] || error "unable to get link to nfqws"
-        wget -q -T 5 $URL -O zapret.tar.gz || error "unable to download $URL"
+        wget -q -t5 -T10 $URL -O zapret.tar.gz || error "unable to download $URL"
     fi
     [ -s zapret.tar.gz ] || exit
     [ $(cat zapret.tar.gz | head -c3) = "Not" ] && exit
