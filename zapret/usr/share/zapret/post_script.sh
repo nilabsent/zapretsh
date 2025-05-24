@@ -6,6 +6,10 @@
 post_start()
 {
     # log "post start actions"
+
+    # download additional domain lists
+    # zapret.sh download-list
+
     return 0
 }
 
