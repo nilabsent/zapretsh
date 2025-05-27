@@ -1,0 +1,20 @@
+--filter-tcp=80,443
+--dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-repeats=3 --dpi-desync-fooling=badseq,md5sig
+--dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+<HOSTLIST>
+
+--new
+--filter-udp=443
+--dpi-desync=fakedsplit --dpi-desync-repeats=6
+--dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+<HOSTLIST_NOAUTO>
+
+--new
+--filter-udp=50000-50099
+--dpi-desync=fakedsplit --filter-l7=discord,stun
+
+--new
+--filter-udp=51820,2408,21331,21110
+--filter-l7=wireguard --dpi-desync=fake --dpi-desync-repeats=11
+--dpi-desync-fake-unknown-udp=/usr/share/zapret/fake/wireguard_initiation.bin
