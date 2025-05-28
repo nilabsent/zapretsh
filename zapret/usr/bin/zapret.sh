@@ -16,11 +16,12 @@ ETC_DIR="/etc"
 # padavan
 [ -d "/etc_ro" -a -d "/etc/storage" ] && ETC_DIR="/etc/storage"
 
-CONFDIR="${ETC_DIR}/zapret"
-CONFDIR_EXAMPLE="/usr/share/zapret"
-CONFFILE="$CONFDIR/config"
-PIDFILE="/var/run/zapret.pid"
-POST_SCRIPT="$CONFDIR/post_script.sh"
+CONF_DIR="${ETC_DIR}/zapret"
+CONF_DIR_EXAMPLE="/usr/share/zapret"
+CONF_FILE="$CONF_DIR/config"
+STRATEGY_FILE="$CONF_DIR/strategy"
+PID_FILE="/var/run/zapret.pid"
+POST_SCRIPT="$CONF_DIR/post_script.sh"
 
 HOSTLIST_DOMAINS="https://github.com/1andrevich/Re-filter-lists/releases/latest/download/domains_all.lst"
 
@@ -28,15 +29,15 @@ HOSTLIST_MARKER="<HOSTLIST>"
 HOSTLIST_NOAUTO_MARKER="<HOSTLIST_NOAUTO>"
 
 HOSTLIST_NOAUTO="
-  --hostlist=${ETC_DIR}/zapret/user.list
-  --hostlist=${ETC_DIR}/zapret/auto.list
-  --hostlist-exclude=${ETC_DIR}/zapret/exclude.list
+  --hostlist=${CONF_DIR}/user.list
+  --hostlist=${CONF_DIR}/auto.list
+  --hostlist-exclude=${CONF_DIR}/exclude.list
   --hostlist=/tmp/filter.list
 "
 HOSTLIST="
-  --hostlist=${ETC_DIR}/zapret/user.list
-  --hostlist-exclude=${ETC_DIR}/zapret/exclude.list
-  --hostlist-auto=${ETC_DIR}/zapret/auto.list
+  --hostlist=${CONF_DIR}/user.list
+  --hostlist-exclude=${CONF_DIR}/exclude.list
+  --hostlist-auto=${CONF_DIR}/auto.list
   --hostlist=/tmp/filter.list
 "
 
@@ -54,7 +55,7 @@ log()
     [ -n "$*" ] || return
     echo "$@"
     local pid
-    [ -f "$PIDFILE" ] && pid="[$(cat "$PIDFILE" 2>/dev/null)]"
+    [ -f "$PID_FILE" ] && pid="[$(cat "$PID_FILE" 2>/dev/null)]"
     logger -t "zapret$pid" "$@"
 }
 
@@ -81,15 +82,15 @@ done
 
 [ -s "$NFQWS_BIN_GIT" ] && NFQWS_BIN="$NFQWS_BIN_GIT"
 
-[ -f "$CONFDIR" ] && rm -f "$CONFDIR"
-[ -d "$CONFDIR" ] || mkdir -p "$CONFDIR" || exit 1
+[ -f "$CONF_DIR" ] && rm -f "$CONF_DIR"
+[ -d "$CONF_DIR" ] || mkdir -p "$CONF_DIR" || exit 1
 # copy all non-existent config files to storage except fake dir
-[ -d "$CONFDIR_EXAMPLE" ] && false | cp -i "${CONFDIR_EXAMPLE}"/* "$CONFDIR" >/dev/null 2>&1
+[ -d "$CONF_DIR_EXAMPLE" ] && false | cp -i "${CONF_DIR_EXAMPLE}"/* "$CONF_DIR" >/dev/null 2>&1
 
-[ -f "$CONFFILE" ] && . "$CONFFILE"
+[ -s "$CONF_FILE" ] && . "$CONF_FILE"
 
 for i in user.list exclude.list auto.list strategy config; do
-  [ -f ${ETC_DIR}/zapret/$i ] || touch ${ETC_DIR}/zapret/$i || exit 1
+  [ -f ${CONF_DIR}/$i ] || touch ${CONF_DIR}/$i || exit 1
 done
 
 ###
@@ -99,9 +100,11 @@ unset OPENWRT
 unset NFT
 nft -v >/dev/null 2>&1 && NFT=1
 
+# padavan
 if [ -x "/usr/sbin/nvram" ]; then
     [ "$(nvram get zapret_iface)" ] && ISP_INTERFACE="$(nvram get zapret_iface)"
     [ "$(nvram get zapret_log)" ] && LOG_LEVEL="$(nvram get zapret_log)"
+    [ "$(nvram get zapret_strategy)" ] && STRATEGY_FILE="$STRATEGY_FILE$(nvram get zapret_strategy)"
 fi
 
 _get_if_default()
@@ -119,7 +122,7 @@ fi
 
 _get_ports()
 {
-    grep -v "^#" ${CONFDIR}/strategy | grep -Eo "filter-$1=[0-9,-]+" \
+    grep -v "^#" $STRATEGY_FILE | grep -Eo "filter-$1=[0-9,-]+" \
         | cut -d '=' -f2 | tr ',' '\n' | sort -u \
         | sed -ne 'H;${x;s/\n/,/g;s/-/:/g;s/^,//;p;}'
 }
@@ -137,7 +140,7 @@ _MANGLE_RULES()
 is_running()
 {
     [ -z "$(pgrep `basename "$NFQWS_BIN"` 2>/dev/null)" ] && return 1
-    [ ! -f "$PIDFILE" ] && return 1
+    [ ! -f "$PID_FILE" ] && return 1
     return 0
 }
 
@@ -175,7 +178,7 @@ startup_args()
 
     [ "$LOG_LEVEL" = "1" ] && args="--debug=syslog $args"
 
-    NFQWS_ARGS="$(grep -v '^#' ${CONFDIR}/strategy)"
+    NFQWS_ARGS="$(grep -v '^#' $STRATEGY_FILE)"
     NFQWS_ARGS=$(replace_str "$HOSTLIST_MARKER" "$HOSTLIST" "$NFQWS_ARGS")
     NFQWS_ARGS=$(replace_str "$HOSTLIST_NOAUTO_MARKER" "$HOSTLIST_NOAUTO" "$NFQWS_ARGS")
     echo "$args $NFQWS_ARGS"
@@ -339,6 +342,14 @@ system_config()
     )
 }
 
+set_strategy_file()
+{
+    [ "$1" ] || return
+    [ -s "$1" ] && STRATEGY_FILE="$1"
+    [ -s "${CONF_DIR}/$1" ] && STRATEGY_FILE="${CONF_DIR}/$1"
+    log "use strategy from file $STRATEGY_FILE"
+}
+
 start_service()
 {
     [ -s "$NFQWS_BIN" -a -x "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found or invalid"
@@ -347,9 +358,11 @@ start_service()
         return
     fi
 
+    set_strategy_file "$@"
+
     kernel_modules
 
-    res=$($NFQWS_BIN --daemon --pidfile=$PIDFILE $(startup_args) 2>&1) ||\
+    res=$($NFQWS_BIN --daemon --pidfile=$PID_FILE $(startup_args) 2>&1) ||\
         error "failed to start nfqws service: $res"
 
     firewall_start
@@ -366,14 +379,14 @@ stop_service()
 {
     firewall_stop
     killall -q -s 15 $(basename "$NFQWS_BIN") && log "service nfqws stopped"
-    rm -f "$PIDFILE"
+    rm -f "$PID_FILE"
 }
 
 reload_service()
 {
     is_running || return
     firewall_start
-    kill -HUP $(cat "$PIDFILE")
+    kill -HUP $(cat "$PID_FILE")
 }
 
 download_nfqws()
@@ -439,7 +452,8 @@ download()
 
 case "$1" in
     start)
-        start_service
+        shift
+        start_service "$@"
     ;;
 
     stop)
@@ -452,7 +466,8 @@ case "$1" in
 
     restart)
         stop_service
-        start_service
+        shift
+        start_service "$@"
     ;;
 
     firewall-start)
@@ -487,7 +502,7 @@ case "$1" in
         download_list
     ;;
 
-    *)  echo "Usage: $0 {start|stop|restart|download|download-nfqws|download-list|status}"
+    *)  echo "Usage: $0 {start [strategy_file]|stop|restart [strategy_file]|download|download-nfqws|download-list|status}"
 esac
 
 [ -s "$POST_SCRIPT" -a -x "$POST_SCRIPT" ] && . "$POST_SCRIPT"
