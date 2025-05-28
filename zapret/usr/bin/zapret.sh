@@ -452,8 +452,7 @@ download()
 
 case "$1" in
     start)
-        shift
-        start_service "$@"
+        start_service "$2"
     ;;
 
     stop)
@@ -466,8 +465,7 @@ case "$1" in
 
     restart)
         stop_service
-        shift
-        start_service "$@"
+        start_service "$2"
     ;;
 
     firewall-start)
