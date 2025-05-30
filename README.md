@@ -13,7 +13,7 @@
 - `cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 - `cd /tmp && wget -q https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz -O- | tar xz && cd zapretsh-main`
 - для OpenWRT в базовой конфигурации: `opkg update && opkg install curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
-- для OpenWRT 24 и выше в базовой конфигурации: `apk update && apk add curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
+- для OpenWRT 25 и выше в базовой конфигурации: `apk update && apk add curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 
 и запустить от прав администратора `install.sh`
 
@@ -157,3 +157,5 @@
 Включение/выключение flow offloading поддерживается из системных настроек OpenWRT, дополнительно ничего активировать не нужно: скрипт `zapret.sh` при старте сам определит состояние offloading и поправит правила iptables, чтобы они не мешали работе фильтрации.
 
 При **ручной остановке** `zapret.sh` для последующей работы flow offloading и ускорения forward-трафика нужно **перезапустить firewall**, чтобы восстановились системные правила в iptables.
+
+Для того чтобы nfqws нормально работал в OpenWRT версии 22 и выше, где используется nftables, нужно выключить flow offloading в настройках файрвола.
