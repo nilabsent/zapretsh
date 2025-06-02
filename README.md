@@ -10,14 +10,13 @@
 
 Для **установки** в Linux или <a href="https://openwrt.org/">OpenWRT</a> необходимо скачать и распаковать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz">zapretsh</a> любым доступным способом, например:
 
-- `cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
-- `cd /tmp && wget -q https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz -O- | tar xz && cd zapretsh-main`
+- для Linux: `cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 - для OpenWRT в базовой конфигурации: `opkg update && opkg install curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 - для OpenWRT 25 и выше в базовой конфигурации: `apk update && apk add curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 
-и запустить от прав администратора `install.sh`
+и запустить от прав администратора `./install.sh`
 
-Для полного **удаления** запустить от прав администратора `uninstall.sh`
+Для полного **удаления** запустить от прав администратора `./uninstall.sh`
 
 В современных версиях десктопных дистрибутивов Linux скорее всего нужные пакеты для работы сервиса будут уже установлены. Если нет, то проверьте наличие следующих/похожих пакетов: `curl libnetfilter-conntrack libnetfilter-queue`
 
@@ -154,8 +153,7 @@
 
 ## Поддержка flow offloading OpenWRT
 
-Включение/выключение flow offloading поддерживается из системных настроек OpenWRT, дополнительно ничего активировать не нужно: скрипт `zapret.sh` при старте сам определит состояние offloading и поправит правила iptables, чтобы они не мешали работе фильтрации.
+Включение/выключение flow offloading поддерживается из системных настроек OpenWRT, дополнительно ничего активировать не нужно: скрипт `zapret.sh` при старте сам определит состояние offloading и внесёт изменения в правила iptables/nftables, чтобы они не мешали работе фильтрации.
+При остановке `zapret.sh` системные правила в iptables/nftables восстанавливаются к исходным значениям.
 
-При **ручной остановке** `zapret.sh` для последующей работы flow offloading и ускорения forward-трафика нужно **перезапустить firewall**, чтобы восстановились системные правила в iptables.
-
-Для того чтобы nfqws нормально работал в OpenWRT версии 22 и выше, где используется nftables, нужно выключить flow offloading в настройках файрвола.
+Совместная работа `zapret.sh` с системным flow offloading тестировалось на OpenWRT версий 19, 21 (iptables) и 22, 24 (nftables).

@@ -492,7 +492,7 @@ case "$1" in
         stop_service
 
         # openwrt: restore default firewall rules
-        [ "$OPENWRT" ] && /etc/init.d/firewall reload
+        [ "$OPENWRT" ] && /etc/init.d/firewall reload >/dev/null 2>&1
     ;;
 
     status)
