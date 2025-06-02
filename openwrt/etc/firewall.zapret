@@ -1,1 +1,1 @@
-/etc/init.d/zapret enabled && /etc/init.d/zapret reload
+[ -x /usr/bin/zapret.sh ] && /usr/bin/zapret.sh reload

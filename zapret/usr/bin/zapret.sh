@@ -184,7 +184,13 @@ startup_args()
     echo "$args $NFQWS_ARGS"
 }
 
-offload_unset_rules()
+offload_unset_nft_rules()
+{
+    nft delete chain inet zapret forward 2>/dev/null
+    nft delete flowtable inet zapret ft 2>/dev/null
+}
+
+offload_unset_ipt_rules()
 {
     eval "$(ip$1tables-save -t filter 2>/dev/null | grep "FORWARD.*forwarding_rule_zapret" | sed 's/^-A/ip$1tables -D/g')"
     ip$1tables -F forwarding_rule_zapret 2>/dev/null
@@ -193,13 +199,31 @@ offload_unset_rules()
 
 offload_stop()
 {
-    [ -n "$NFT" ] && return
-    [ -n "$OPENWRT" ] || return
-    offload_unset_rules
-    offload_unset_rules 6
+    [ "$OPENWRT" ] || return
+    if [ "$NFT" ]; then
+        offload_unset_nft_rules
+    else
+        offload_unset_ipt_rules
+        offload_unset_ipt_rules 6
+    fi
 }
 
-offload_set_rules()
+offload_set_nft_rules()
+{
+    flow=$(fw4 print | grep -A5 "flowtable" | grep -E "hook|devices|flags" | tr -d '"')
+    [ "$flow" ] || return
+    nft add flowtable inet zapret ft "{$flow}"
+
+    UDP_PORTS=$(echo $UDP_PORTS | tr ":" "-")
+    TCP_PORTS=$(echo $TCP_PORTS | tr ":" "-")
+
+    nft add chain inet zapret forward "{type filter hook forward priority filter; policy accept;}"
+    [ "$TCP_PORTS" ] && nft add rule inet zapret forward "tcp dport {$TCP_PORTS} ct original packets 1-9 return comment direct_flow_offloading_exemption"
+    [ "$UDP_PORTS" ] && nft add rule inet zapret forward "udp dport {$UDP_PORTS} ct original packets 1-9 return comment direct_flow_offloading_exemption"
+    nft add rule inet zapret forward "meta l4proto { tcp, udp } flow add @ft"
+}
+
+offload_set_ipt_rules()
 {
     local HW_OFFLOAD FW_FORWARD
 
@@ -224,7 +248,6 @@ EOF
 
 offload_start()
 {
-    [ -n "$NFT" ] && return
     # offloading is supported only in OpenWrt
     [ -n "$OPENWRT" ] || return
 
@@ -233,12 +256,21 @@ offload_start()
     [ -n "$ISP_IF" ] || return
     [ "$(uci -q get firewall.@defaults[0].flow_offloading)" = "1" ] || return
 
-    # delete system offloading
-    eval "$(iptables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/iptables -D/g')"
-    eval "$(ip6tables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/ip6tables -D/g')"
+    if [ "$NFT" ]; then
+        # delete system nftables offloading
+        nft_rule_handle=$(nft -a list chain inet fw4 forward | grep "flow add @ft" | grep -Eo "handle [0-9]+$" | head -n1)
+        [ "$nft_rule_handle" ] && nft delete rule inet fw4 forward $nft_rule_handle
+        nft delete flowtable inet fw4 ft 2>/dev/null
 
-    offload_set_rules
-    offload_set_rules 6
+        offload_set_nft_rules
+    else
+        # delete system iptables offloading
+        eval "$(iptables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/iptables -D/g')"
+        eval "$(ip6tables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/ip6tables -D/g')"
+
+        offload_set_ipt_rules
+        offload_set_ipt_rules 6
+    fi
 
     log "offloading rules updated"
 }
@@ -332,12 +364,13 @@ system_config()
     sysctl -w net.netfilter.nf_conntrack_checksum=0 >/dev/null 2>&1
     sysctl -w net.netfilter.nf_conntrack_tcp_be_liberal=1 >/dev/null 2>&1
     [ -n "$OPENWRT" ] || return
-    [ -f /etc/firewall.zapret ] \
-        || echo "/etc/init.d/zapret enabled && /etc/init.d/zapret reload" > /etc/firewall.zapret
+    [ -s /etc/firewall.zapret ] \
+        || echo "[ -x /usr/bin/zapret.sh ] && /usr/bin/zapret.sh reload" > /etc/firewall.zapret
     uci -q get firewall.zapret >/dev/null || (
         uci -q set firewall.zapret=include
         uci -q set firewall.zapret.path='/etc/firewall.zapret'
-        uci -q set firewall.zapret.reload='1'
+        [ ! "$NFT" ] && uci -q set firewall.zapret.reload='1'
+        [ "$NFT" ] && uci -q set firewall.zapret.fw4_compatible='1'
         uci commit
     )
 }
@@ -457,6 +490,9 @@ case "$1" in
 
     stop)
         stop_service
+
+        # openwrt: restore default firewall rules
+        [ "$OPENWRT" ] && /etc/init.d/firewall reload &
     ;;
 
     status)
