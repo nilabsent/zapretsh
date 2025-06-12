@@ -428,15 +428,14 @@ download_nfqws()
 
     ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|arm|rlx|i386|i686|x86_64')
     case "$ARCH" in
+        aarch64)
+            ARCH="arm64"
+        ;;
         rlx)
             ARCH="lexra"
         ;;
         mips)
-            ARCH="mips32r1-msb"
-            grep -qE 'system type.*(MediaTek|Ralink)' /proc/cpuinfo && ARCH="mips32r1-lsb"
-        ;;
-        mipsel)
-            ARCH="mips32r1-lsb"
+            grep -qE 'system type.*(MediaTek|Ralink)' /proc/cpuinfo && ARCH="mipsel"
         ;;
         i386|i686)
             ARCH="x86"
@@ -459,7 +458,7 @@ download_nfqws()
     [ $(cat zapret.tar.gz | head -c3) = "Not" ] && exit
     log "downloaded successfully: $URL"
 
-    local NFQWS=$(tar tzfv zapret.tar.gz | grep binaries/$ARCH/nfqws | awk '{print $6}')
+    local NFQWS=$(tar tzfv zapret.tar.gz | grep binaries/linux-$ARCH/nfqws | awk '{print $6}')
     [ -n "$NFQWS" ] || error "nfqws not found in archive zapret.tar.gz for arch $ARCH"
     tar xzf zapret.tar.gz "$NFQWS" -O > $NFQWS_BIN_GIT
     [ -s $NFQWS_BIN_GIT ] && chmod +x $NFQWS_BIN_GIT
