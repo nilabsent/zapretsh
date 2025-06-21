@@ -351,7 +351,7 @@ firewall_start()
 
     if [ "$ISP_IF" ]; then
         IF_LOG=$(echo "$ISP_IF" | tr "\n" " ")
-        log "firewall rules were applied on interface(s): $IF_LOG"
+        log "firewall rules updated on interface(s): $IF_LOG"
     else
         log "firewall rules were not set"
     fi
@@ -380,14 +380,13 @@ set_strategy_file()
     [ "$1" ] || return
     [ -s "$1" ] && STRATEGY_FILE="$1"
     [ -s "${CONF_DIR}/$1" ] && STRATEGY_FILE="${CONF_DIR}/$1"
-    log "use strategy from file $STRATEGY_FILE"
 }
 
 start_service()
 {
     [ -s "$NFQWS_BIN" -a -x "$NFQWS_BIN" ] || error "$NFQWS_BIN: not found or invalid"
     if is_running; then
-        echo "service nfqws is already running"
+        echo "already running"
         return
     fi
 
@@ -395,23 +394,32 @@ start_service()
 
     kernel_modules
 
-    res=$($NFQWS_BIN --daemon --pidfile=$PID_FILE $(startup_args) 2>&1) ||\
-        error "failed to start nfqws service: $res"
+    res=$($NFQWS_BIN --daemon --pidfile=$PID_FILE $(startup_args) 2>&1)
+    if [ ! "$?" = "0" ]; then
+        log "failed to start: $(echo "$res" | grep 'github version')"
+        echo "$res" | grep -Ei 'unrecognized|invalid' \
+        | while read -r i; do
+            log "$i"
+        done
+        exit 1
+    fi
 
-    firewall_start
-    system_config
-
+    log "started, $(echo "$res" | grep 'github version')"
+    log "use strategy from $STRATEGY_FILE"
     echo "$res" \
-    | grep -Eiv "^(loading|running as|binding|unbinding|opening|setting|initializing)" \
-    | while read i; do
+    | grep -Ei "loaded|profile" \
+    | while read -r i; do
         log "$i"
     done
+
+    system_config
+    firewall_start
 }
 
 stop_service()
 {
     firewall_stop
-    killall -q -s 15 $(basename "$NFQWS_BIN") && log "service nfqws stopped"
+    killall -q -s 15 $(basename "$NFQWS_BIN") && log "stopped"
     rm -f "$PID_FILE"
 }
 
@@ -424,18 +432,24 @@ reload_service()
 
 download_nfqws()
 {
-    cd /tmp
+    # $1 - nfqws version number starting from 69.3
+
+    local archive="/tmp/zapret.tar.gz"
 
     ARCH=$(uname -m | grep -oE 'mips|mipsel|aarch64|arm|rlx|i386|i686|x86_64')
     case "$ARCH" in
-        aarch64)
-            ARCH="arm64"
+        aarch64*)
+            ARCH="(aarch64|arm64)"
+        ;;
+        armv*)
+            ARCH="arm"
         ;;
         rlx)
             ARCH="lexra"
         ;;
         mips)
-            grep -qE 'system type.*(MediaTek|Ralink)' /proc/cpuinfo && ARCH="mipsel"
+            ARCH="(mips32r1-msb|mips)"
+            grep -qE 'system type.*(MediaTek|Ralink)' /proc/cpuinfo && ARCH="(mips32r1-lsb|mipsel)"
         ;;
         i386|i686)
             ARCH="x86"
@@ -443,43 +457,57 @@ download_nfqws()
     esac
     [ -n "$ARCH" ] || error "cpu arch unknown"
 
-    if [ -f /usr/bin/curl ]; then
-        URL=$(curl -s --connect-timeout 5 'https://api.github.com/repos/bol-van/zapret/releases/latest' |\
-            grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
-        [ -n "$URL" ] || error "unable to get link to nfqws"
-        curl -sSL --connect-timeout 5 $URL -o zapret.tar.gz || error "unable to download $URL"
+    if [ "$1" ]; then
+        URL="https://github.com/bol-van/zapret/releases/download/v$1/zapret-v$1-openwrt-embedded.tar.gz"
+        if [ -x /usr/bin/curl ]; then
+            curl -sSL --connect-timeout 10 "$URL" -o $archive \
+                || error "unable to download $URL"
+        else
+            wget -q -t5 -T10 "$URL" -O $archive \
+                || error "unable to download $URL"
+        fi
     else
-        URL=$(wget -q -t5 -T10 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- |\
-            grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
-        [ -n "$URL" ] || error "unable to get link to nfqws"
-        wget -q -t5 -T10 $URL -O zapret.tar.gz || error "unable to download $URL"
+        if [ -x /usr/bin/curl ]; then
+            URL=$(curl -sSL --connect-timeout 10 'https://api.github.com/repos/bol-van/zapret/releases/latest' \
+                  | grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
+            [ -n "$URL" ] || error "unable to get archive link"
+
+            curl -sSL --connect-timeout 10 "$URL" -o $archive \
+                || error "unable to download: $URL"
+        else
+            URL=$(wget -q -t5 -T10 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- \
+                  | grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
+            [ -n "$URL" ] || error "unable to get archive link"
+
+            wget -q -t5 -T10 "$URL" -O $archive \
+                || error "unable to download: $URL"
+        fi
     fi
-    [ -s zapret.tar.gz ] || exit
-    [ $(cat zapret.tar.gz | head -c3) = "Not" ] && exit
+
+    [ -s $archive ] || exit
+    [ $(cat $archive | head -c3) = "Not" ] && error "not found: $URL"
     log "downloaded successfully: $URL"
 
-    local NFQWS=$(tar tzfv zapret.tar.gz | grep binaries/linux-$ARCH/nfqws | awk '{print $6}')
-    [ -n "$NFQWS" ] || error "nfqws not found in archive zapret.tar.gz for arch $ARCH"
-    tar xzf zapret.tar.gz "$NFQWS" -O > $NFQWS_BIN_GIT
+    local NFQWS=$(tar tzfv $archive \
+                  | grep -E "binaries/(linux-)?$ARCH/nfqws" | awk '{print $6}')
+    [ -n "$NFQWS" ] || error "nfqws not found for architecture $ARCH"
+
+    tar xzf $archive "$NFQWS" -O > $NFQWS_BIN_GIT
     [ -s $NFQWS_BIN_GIT ] && chmod +x $NFQWS_BIN_GIT
-    rm -f zapret.tar.gz
+    rm -f $archive
 }
 
 download_list()
 {
     local LIST="/tmp/filter.list"
+
     if [ -f /usr/bin/curl ]; then
         curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $LIST || error "unable to download $HOSTLIST_DOMAINS"
     else
         wget -q -T 5 "$HOSTLIST_DOMAINS" -O $LIST || error "unable to download $HOSTLIST_DOMAINS"
     fi
-    [ -s "$LIST" ] && log "downloaded successfully: $HOSTLIST_DOMAINS"
-}
 
-download()
-{
-    download_nfqws
-    download_list
+    [ -s "$LIST" ] && log "downloaded successfully: $HOSTLIST_DOMAINS"
 }
 
 case "$1" in
@@ -523,19 +551,15 @@ case "$1" in
         reload_service
     ;;
 
-    download)
-        download
-    ;;
-
-    download-nfqws)
-        download_nfqws
+    download|download-nfqws)
+        download_nfqws "$2"
     ;;
 
     download-list)
         download_list
     ;;
 
-    *)  echo "Usage: $0 {start [strategy_file]|stop|restart [strategy_file]|download|download-nfqws|download-list|status}"
+    *)  echo "Usage: $0 {start [strategy_file]|stop|restart [strategy_file]|download [version_nfqws]|download-list|status}"
 esac
 
 [ -s "$POST_SCRIPT" -a -x "$POST_SCRIPT" ] && . "$POST_SCRIPT"
