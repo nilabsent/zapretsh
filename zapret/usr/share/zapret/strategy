@@ -31,7 +31,6 @@
 --dpi-desync=fakedsplit --filter-l7=discord,stun
 
 --new
---filter-udp=51820,2408,21331,21110
+--filter-udp=51820,2408,1002
 --filter-l7=wireguard --dpi-desync=fake --dpi-desync-repeats=6
-#--dpi-desync-fake-unknown-udp=/usr/share/zapret/fake/wireguard_initiation.bin
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
