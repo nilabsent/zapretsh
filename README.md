@@ -10,7 +10,7 @@
 
 Для **установки** в Linux или <a href="https://openwrt.org/">OpenWRT</a> необходимо скачать и распаковать репозиторий <a href="https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz">zapretsh</a> любым доступным способом, например:
 
-- для Linux: `cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
+- для Linux/OpenWRT: `cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 - для OpenWRT в базовой конфигурации: `opkg update && opkg install curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 - для OpenWRT 25 и выше в базовой конфигурации: `apk update && apk add curl && cd /tmp && curl -sL https://github.com/nilabsent/zapretsh/archive/refs/heads/main.tar.gz | tar xz && cd zapretsh-main`
 
@@ -36,15 +36,14 @@
 
 ## Доступные команды
 
-- `zapret.sh start` - запуск сервиса
+- `zapret.sh start [strategy_file]` - запуск сервиса; параметром можно указать файл со стратегиями, по умолчанию используется `/etc/zapret/strategy`
 - `zapret.sh stop` - остановка сервиса
-- `zapret.sh restart` - перезапуск сервиса
+- `zapret.sh restart [strategy_file]` - перезапуск сервиса; параметром можно указать файл со стратегиями
 - `zapret.sh reload` - перечитать списки доменов в файлах и обновить правила iptables/nftables
 - `zapret.sh firewall-start` - применить правила iptables/nftables
 - `zapret.sh firewall-stop` - удалить правила iptables/nftables
-- `zapret.sh download-nfqws` - скачать файл `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">zapret</a> в `/tmp/nfqws`. Если при старте сервиса этот файл присутствует, то он будет запускаться вместо `/usr/bin/nfqws`
+- `zapret.sh download [nfqws_version]` - скачать последнюю версию файла `nfqws` из репозитория <a href="https://github.com/bol-van/zapret/releases/latest">zapret</a> в `/tmp/nfqws`. Если при старте сервиса этот файл присутствует, то он будет запускаться вместо `/usr/bin/nfqws`. Можно указать номер нужной версии `nfqws`, начиная с 69.3
 - `zapret.sh download-list` - скачать список доменов из репозитория <a href="https://github.com/1andrevich/Re-filter-lists">Re-filter-lists</a> в `/tmp/filter.list`. При старте сервиса этот список используется совместно с `user.list`
-- `zapret.sh download` - скачать и `nfqws` и список доменов
 
 ## Фильтрация по именам доменов
 
@@ -80,6 +79,8 @@
 - удалить все записи в списках `user.list` и `auto.list`
 - не загружать внешние списки по команде `zapret.sh download-list`
 - в `exclude.list` добавить домены, которые не нужно обрабатывать, если сайт из-за фильтрации работает некорректно: например, есть проблемы с сертификатами или отображением данных.
+
+Либо просто использовать файл примера таких стратегий для http/https `/etc/zapret/strategy9`, переименовав его в `/etc/zapret/strategy`, там из списков доменов оставлен только `exclude.list`
 
 ## Стратегии фильтрации
 
