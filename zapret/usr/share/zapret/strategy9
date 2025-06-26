@@ -1,25 +1,24 @@
 # http: filter all domains, exept exclude.list
 --filter-tcp=80
---dpi-desync=fakedsplit --dpi-desync-split-pos=4,method+2
---dpi-desync-repeats=4 --dpi-desync-fooling=md5sig
+--dpi-desync=fakedsplit --dpi-desync-split-pos=method+19 --dpi-desync-fooling=md5sig
 --hostlist-exclude=/etc/storage/zapret/exclude.list
 
 # https: filter all domains, exept exclude.list
 --new --filter-tcp=443
 --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2,midsld,5
---dpi-desync-repeats=3 --dpi-desync-ttl=0 --dpi-desync-fooling=badseq,md5sig
---dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
---dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+#--dpi-desync-repeats=3
+--dpi-desync-ttl=0 --dpi-desync-fooling=badseq,md5sig
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=stackoverflow.com
 --hostlist-exclude=/etc/storage/zapret/exclude.list
 
 --new --filter-udp=443
---dpi-desync=fakedsplit --dpi-desync-repeats=6
+--dpi-desync=fakedsplit --dpi-desync-repeats=2
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST_NOAUTO>
 
 --new --filter-udp=50000-50099
---dpi-desync=fakedsplit --filter-l7=discord,stun
+--dpi-desync=fakedsplit --filter-l7=discord,stun --dpi-desync-cutoff=n3
 
---new --filter-udp=51820,2408,1002
---filter-l7=wireguard --dpi-desync=fake --dpi-desync-repeats=6
+--new --filter-udp=51820,2408,1002,21331
+--filter-l7=wireguard --dpi-desync=fake --dpi-desync-repeats=4
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
