@@ -10,13 +10,13 @@
 <HOSTLIST>
 
 --new --filter-udp=443
---dpi-desync=fakedsplit --dpi-desync-repeats=6
+--dpi-desync=fake --dpi-desync-repeats=6
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST_NOAUTO>
 
 --new --filter-udp=50000-50099
---dpi-desync=fakedsplit --filter-l7=discord,stun --dpi-desync-cutoff=n3
+--dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n3
 
 --new --filter-udp=51820,2408,1002
---filter-l7=wireguard --dpi-desync=fake --dpi-desync-repeats=6
+--dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
