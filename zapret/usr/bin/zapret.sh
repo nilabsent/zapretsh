@@ -40,6 +40,9 @@ HOSTLIST="
   --hostlist-auto=${CONF_DIR}/auto.list
   --hostlist=/tmp/filter.list
 "
+DESYNC_MARK="0x40000000"
+# mark allowed clients
+FILTER_MARK="0x10000000"
 
 ### default config
 
@@ -47,6 +50,9 @@ ISP_INTERFACE=
 NFQUEUE_NUM=200
 LOG_LEVEL=0
 USER="nobody"
+
+# comma separated list of client ipv4 addresses, enables client access restrictions
+CLIENTS_ALLOWED=
 
 ###
 
@@ -105,6 +111,7 @@ if [ -x "/usr/sbin/nvram" ]; then
     [ "$(nvram get zapret_iface)" ] && ISP_INTERFACE="$(nvram get zapret_iface)"
     [ "$(nvram get zapret_log)" ] && LOG_LEVEL="$(nvram get zapret_log)"
     [ "$(nvram get zapret_strategy)" ] && STRATEGY_FILE="$STRATEGY_FILE$(nvram get zapret_strategy)"
+    [ "$(nvram get zapret_clients_allowed)" ] && CLIENTS_ALLOWED="$(nvram get zapret_clients_allowed | tr -s ',' ' ')"
 fi
 
 _get_if_default()
@@ -112,18 +119,24 @@ _get_if_default()
     ip -$1 route show default | grep via | sed -r 's/^.*default.*via.* dev ([^ ]+).*$/\1/' | head -n1
 }
 
+unset ISP_IF
 if [ "$ISP_INTERFACE" ]; then
-    ISP_IF=$(echo "$ISP_INTERFACE" | tr -d " " | tr "," "\n" | sort -u);
+    ISP_IF=$(echo "$ISP_INTERFACE" | tr -d " " | tr -s "," "\n" | sort -u);
 else
     ISP_IF4=$(_get_if_default 4);
     ISP_IF6=$(_get_if_default 6);
     ISP_IF=$(printf "%s\n%s" "${ISP_IF4}" "${ISP_IF6}" | sort -u)
 fi
 
+isp_is_present()
+{
+    [ "$(echo "$ISP_IF" | tr -d ' ,\n')" ]
+}
+
 _get_ports()
 {
     grep -v "^#" $STRATEGY_FILE | grep -Eo "filter-$1=[0-9,-]+" \
-        | cut -d '=' -f2 | tr ',' '\n' | sort -u \
+        | cut -d '=' -f2 | tr -s ',' '\n' | sort -u \
         | sed -ne 'H;${x;s/\n/,/g;s/-/:/g;s/^,//;p;}'
 }
 
@@ -132,16 +145,35 @@ UDP_PORTS=$(_get_ports udp)
 
 _MANGLE_RULES()
 {
-    [ "$TCP_PORTS" ] && echo "-A PREROUTING  -i $IFACE -p tcp -m multiport --sports $TCP_PORTS -m connbytes --connbytes-dir=reply    --connbytes-mode=packets --connbytes 1:3 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
-    [ "$TCP_PORTS" ] && echo "-A POSTROUTING -o $IFACE -p tcp -m multiport --dports $TCP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
-    [ "$UDP_PORTS" ] && echo "-A POSTROUTING -o $IFACE -p udp -m multiport --dports $UDP_PORTS -m connbytes --connbytes-dir=original --connbytes-mode=packets --connbytes 1:9 -m mark ! --mark 0x40000000/0x40000000 -j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
+    local i iface filter
+
+    # enable only for ipv4
+    # $1 = "6" - sign that it is ipv6
+    if [ "$CLIENTS_ALLOWED" -a ! "$1" ]; then
+        filter="-m mark --mark $FILTER_MARK/$FILTER_MARK"
+
+        echo "-A OUTPUT -j MARK --or-mark $FILTER_MARK"
+        for i in $CLIENTS_ALLOWED; do
+            echo "-A PREROUTING -s $i -j MARK --or-mark $FILTER_MARK"
+        done
+    fi
+
+    local rule_nfqueue="-j NFQUEUE --queue-num $NFQUEUE_NUM --queue-bypass"
+    local rule_output_end="$filter -m mark ! --mark $DESYNC_MARK/$DESYNC_MARK -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original $rule_nfqueue"
+
+    for iface in $ISP_IF; do
+        if [ "$TCP_PORTS" ]; then
+            echo "-A PREROUTING -i $iface -p tcp -m multiport --sports $TCP_PORTS -m connbytes --connbytes 1:3 --connbytes-mode packets --connbytes-dir reply $rule_nfqueue"
+            echo "-A POSTROUTING -o $iface -p tcp -m multiport --dports $TCP_PORTS $rule_output_end"
+        fi
+        [ "$UDP_PORTS" ] && echo "-A POSTROUTING -o $iface -p udp -m multiport --dports $UDP_PORTS $rule_output_end"
+    done
 }
 
 is_running()
 {
     [ -z "$(pgrep `basename "$NFQWS_BIN"` 2>/dev/null)" ] && return 1
-    [ ! -f "$PID_FILE" ] && return 1
-    return 0
+    [ "$PID_FILE" ]
 }
 
 status_service()
@@ -166,9 +198,9 @@ kernel_modules()
 replace_str()
 {
     local a=$(echo "$1" | sed 's/\//\\\//g')
-    local b=$(echo "$2" | tr '\n' ' ' | sed 's/\//\\\//g')
+    local b=$(echo "$2" | tr -s '\n' ' ' | sed 's/\//\\\//g')
     shift; shift
-    echo "$@" | tr '\n' ' ' | sed "s/$a/$b/g; s/[ \t]\{1,\}/ /g"
+    echo "$@" | tr -s '\n' ' ' | sed "s/$a/$b/g; s/[ \t]\{1,\}/ /g"
 }
 
 startup_args()
@@ -214,8 +246,8 @@ offload_set_nft_rules()
     [ "$flow" ] || return
     nft add flowtable inet zapret ft "{$flow}"
 
-    UDP_PORTS=$(echo $UDP_PORTS | tr ":" "-")
-    TCP_PORTS=$(echo $TCP_PORTS | tr ":" "-")
+    UDP_PORTS=$(echo $UDP_PORTS | tr -s ":" "-")
+    TCP_PORTS=$(echo $TCP_PORTS | tr -s ":" "-")
 
     nft add chain inet zapret forward "{type filter hook forward priority filter; policy accept;}"
     [ "$TCP_PORTS" ] && nft add rule inet zapret forward "tcp dport {$TCP_PORTS} ct original packets 1-9 return comment direct_flow_offloading_exemption"
@@ -225,23 +257,23 @@ offload_set_nft_rules()
 
 offload_set_ipt_rules()
 {
-    local HW_OFFLOAD FW_FORWARD
+    local hw_offload fw_forward
 
-    [ "$(uci -q get firewall.@defaults[0].flow_offloading_hw)" = "1" ] && HW_OFFLOAD="--hw"
+    [ "$(uci -q get firewall.@defaults[0].flow_offloading_hw)" = "1" ] && hw_offload="--hw"
 
-    FW_FORWARD=$(
+    fw_forward=$(
         for IFACE in $ISP_IF; do
             # insert after custom forwarding rule chain
             echo "-I FORWARD 2 -o $IFACE -j forwarding_rule_zapret"
         done)
 
-    [ -n "$FW_FORWARD" ] && ip$1tables-restore -n <<EOF
+    [ -n "$fw_forward" ] && ip$1tables-restore -n <<EOF
 *filter
 :forwarding_rule_zapret - [0:0]
 -A forwarding_rule_zapret -p udp -m multiport --dports $UDP_PORTS -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original -m comment --comment zapret_traffic_offloading_exemption -j RETURN
 -A forwarding_rule_zapret -p tcp -m multiport --dports $TCP_PORTS -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original -m comment --comment zapret_traffic_offloading_exemption -j RETURN
--A forwarding_rule_zapret -m comment --comment zapret_traffic_offloading_enable -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD $HW_OFFLOAD
-$(echo "$FW_FORWARD")
+-A forwarding_rule_zapret -m comment --comment zapret_traffic_offloading_enable -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD $hw_offload
+$(echo "$fw_forward")
 COMMIT
 EOF
 }
@@ -251,9 +283,6 @@ offload_start()
     # offloading is supported only in OpenWrt
     [ -n "$OPENWRT" ] || return
 
-    offload_stop
-
-    [ -n "$ISP_IF" ] || return
     [ "$(uci -q get firewall.@defaults[0].flow_offloading)" = "1" ] || return
 
     if [ "$NFT" ]; then
@@ -284,8 +313,17 @@ nftables_stop()
 iptables_stop()
 {
     [ -n "$NFT" ] && return
-    eval "$(iptables-save -t mangle 2>/dev/null | grep "queue-num $NFQUEUE_NUM " | sed 's/^-A/iptables -t mangle -D/g')"
-    eval "$(ip6tables-save -t mangle 2>/dev/null | grep "queue-num $NFQUEUE_NUM " | sed 's/^-A/ip6tables -t mangle -D/g')"
+
+    local i
+
+    for i in "" "6"; do
+        [ "$i" == "6" ] && [ ! -d /proc/sys/net/ipv6 ] && continue
+        ip${i}tables-restore -n <<EOF
+*mangle
+$(ip${i}tables-save -t mangle 2>/dev/null | sed -n "/\(queue-num $NFQUEUE_NUM --queue\|mark $DESYNC_MARK\/$DESYNC_MARK\|mark $FILTER_MARK\/$FILTER_MARK\)/{s/^-A/-D/p}")
+COMMIT
+EOF
+    done
 }
 
 firewall_stop()
@@ -299,64 +337,68 @@ nftables_start()
 {
     [ -n "$NFT" ] || return
 
-    UDP_PORTS=$(echo $UDP_PORTS | tr ":" "-")
-    TCP_PORTS=$(echo $TCP_PORTS | tr ":" "-")
+    local filter iface
+
+    UDP_PORTS=$(echo $UDP_PORTS | tr -s ":" "-")
+    TCP_PORTS=$(echo $TCP_PORTS | tr -s ":" "-")
 
     nft create table inet zapret
+    nft add set inet zapret wanif "{type ifname;}"
     nft add chain inet zapret post "{type filter hook postrouting priority mangle;}"
     nft add chain inet zapret pre "{type filter hook prerouting priority filter;}"
 
-    for IFACE in $ISP_IF; do
-        [ "$TCP_PORTS" ] && nft add rule inet zapret post oifname $IFACE meta mark and 0x40000000 == 0 tcp dport "{$TCP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
-        [ "$UDP_PORTS" ] && nft add rule inet zapret post oifname $IFACE meta mark and 0x40000000 == 0 udp dport "{$UDP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
-        [ "$TCP_PORTS" ] && nft add rule inet zapret pre iifname $IFACE tcp sport "{$TCP_PORTS}" ct reply packets 1-3 queue num $NFQUEUE_NUM bypass
+    for iface in $ISP_IF; do
+        nft add element inet zapret wanif "{ $iface }"
     done
-}
 
-iptables_set_rules()
-{
-    local FW_MANGLE
+    if [ "$CLIENTS_ALLOWED" ]; then
+        filter="mark and $FILTER_MARK != 0"
+        nft add chain inet zapret mark_out "{type filter hook output priority mangle;}"
+        nft add rule inet zapret mark_out mark set mark or $FILTER_MARK
 
-    [ "$1" == "6" ] && [ ! -d /proc/sys/net/ipv6 ] && return
+        nft add set inet zapret allowedip "{type ipv4_addr; policy memory; size 65536; flags interval; auto-merge}"
+        nft add chain inet zapret mark_allowedip "{type filter hook prerouting priority mangle;}"
 
-    FW_MANGLE=$(
-        for IFACE in $ISP_IF; do
-            echo "$(_MANGLE_RULES)"
-        done)
+        nft add element inet zapret allowedip "{ $CLIENTS_ALLOWED }"
+        nft add rule inet zapret mark_allowedip ip saddr == @allowedip mark set mark or $FILTER_MARK
+    fi
 
-    [ -n "$FW_MANGLE" ] && ip$1tables-restore -n <<EOF
-*mangle
-$(echo "$FW_MANGLE")
-COMMIT
-EOF
+    [ "$TCP_PORTS" ] && nft add rule inet zapret post oifname @wanif $filter mark and $DESYNC_MARK == 0 tcp dport "{$TCP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
+    [ "$UDP_PORTS" ] && nft add rule inet zapret post oifname @wanif $filter mark and $DESYNC_MARK == 0 udp dport "{$UDP_PORTS}" ct original packets 1-9 queue num $NFQUEUE_NUM bypass
+    [ "$TCP_PORTS" ] && nft add rule inet zapret pre iifname @wanif tcp sport "{$TCP_PORTS}" ct reply packets 1-3 queue num $NFQUEUE_NUM bypass
 }
 
 iptables_start()
 {
     [ -n "$NFT" ] && return
 
-    UDP_PORTS=$(echo $UDP_PORTS | tr "-" ":")
-    TCP_PORTS=$(echo $TCP_PORTS | tr "-" ":")
+    UDP_PORTS=$(echo $UDP_PORTS | tr -s "-" ":")
+    TCP_PORTS=$(echo $TCP_PORTS | tr -s "-" ":")
 
-    iptables_set_rules
-    iptables_set_rules 6
+    for i in "" "6"; do
+        [ "$i" == "6" ] && [ ! -d /proc/sys/net/ipv6 ] && continue
+        ip${i}tables-restore -n <<EOF
+*mangle
+$(_MANGLE_RULES $1)
+COMMIT
+EOF
+    done
 }
 
 firewall_start()
 {
     firewall_stop
 
-    nftables_start
-    iptables_start
+    if isp_is_present; then
+        nftables_start
+        iptables_start
+        offload_start
 
-    if [ "$ISP_IF" ]; then
-        IF_LOG=$(echo "$ISP_IF" | tr "\n" " ")
+        IF_LOG=$(echo "$ISP_IF" | tr -s "\n" " ")
         log "firewall rules updated on interface(s): $IF_LOG"
     else
-        log "firewall rules were not set"
+        log "interfaces not defined, firewall rules not set"
     fi
-
-    offload_start
 }
 
 system_config()
@@ -405,6 +447,7 @@ start_service()
     fi
 
     log "started, $(echo "$res" | grep 'github version')"
+    [ "$CLIENTS_ALLOWED" ] && log "allowed clients: $CLIENTS_ALLOWED"
     log "use strategy from $STRATEGY_FILE"
     echo "$res" \
     | grep -Ei "loaded|profile" \
@@ -463,7 +506,7 @@ download_nfqws()
             curl -sSL --connect-timeout 10 "$URL" -o $archive \
                 || error "unable to download $URL"
         else
-            wget -q -t5 -T10 "$URL" -O $archive \
+            wget -q -T 10 "$URL" -O $archive \
                 || error "unable to download $URL"
         fi
     else
@@ -475,11 +518,11 @@ download_nfqws()
             curl -sSL --connect-timeout 10 "$URL" -o $archive \
                 || error "unable to download: $URL"
         else
-            URL=$(wget -q -t5 -T10 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- \
-                  | grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
+            URL=$(wget -q -T 10 'https://api.github.com/repos/bol-van/zapret/releases/latest' -O- \
+                  | tr ',' '\n' | grep 'browser_download_url.*openwrt-embedded' | cut -d '"' -f4)
             [ -n "$URL" ] || error "unable to get archive link"
 
-            wget -q -t5 -T10 "$URL" -O $archive \
+            wget -q -T 10 "$URL" -O $archive \
                 || error "unable to download: $URL"
         fi
     fi
@@ -488,26 +531,25 @@ download_nfqws()
     [ $(cat $archive | head -c3) = "Not" ] && error "not found: $URL"
     log "downloaded successfully: $URL"
 
-    local NFQWS=$(tar tzfv $archive \
-                  | grep -E "binaries/(linux-)?$ARCH/nfqws" | awk '{print $6}')
-    [ -n "$NFQWS" ] || error "nfqws not found for architecture $ARCH"
+    local nfqws_bin=$(tar tzfv $archive | grep -E "binaries/(linux-)?$ARCH/nfqws" | awk '{print $6}')
+    [ -n "$nfqws_bin" ] || error "nfqws not found for architecture $ARCH"
 
-    tar xzf $archive "$NFQWS" -O > $NFQWS_BIN_GIT
+    tar xzf $archive "$nfqws_bin" -O > $NFQWS_BIN_GIT
     [ -s $NFQWS_BIN_GIT ] && chmod +x $NFQWS_BIN_GIT
     rm -f $archive
 }
 
 download_list()
 {
-    local LIST="/tmp/filter.list"
+    local list="/tmp/filter.list"
 
     if [ -f /usr/bin/curl ]; then
-        curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $LIST || error "unable to download $HOSTLIST_DOMAINS"
+        curl -sSL --connect-timeout 5 "$HOSTLIST_DOMAINS" -o $list || error "unable to download $HOSTLIST_DOMAINS"
     else
-        wget -q -T 5 "$HOSTLIST_DOMAINS" -O $LIST || error "unable to download $HOSTLIST_DOMAINS"
+        wget -q -T 10 "$HOSTLIST_DOMAINS" -O $list || error "unable to download $HOSTLIST_DOMAINS"
     fi
 
-    [ -s "$LIST" ] && log "downloaded successfully: $HOSTLIST_DOMAINS"
+    [ -s "$list" ] && log "downloaded successfully: $HOSTLIST_DOMAINS"
 }
 
 case "$1" in
@@ -540,6 +582,7 @@ case "$1" in
     ;;
 
     offload-start)
+        offload_stop
         offload_start
     ;;
 

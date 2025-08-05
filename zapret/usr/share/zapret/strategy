@@ -1,8 +1,6 @@
-# All arguments here: https://github.com/bol-van/zapret
-
 --filter-tcp=80
---dpi-desync=fakedsplit --dpi-desync-split-pos=method+19
---dpi-desync-repeats=4 --dpi-desync-fooling=md5sig
+--dpi-desync=fakeddisorder --dpi-desync-split-pos=sld+1 --dpi-desync-fooling=md5sig
+#--dpi-desync=fakedsplit --dpi-desync-autottl=2 --dpi-desync-fooling=md5sig
 <HOSTLIST>
 
 --new --filter-tcp=443
@@ -21,9 +19,13 @@
 #--dpi-desync-split-pos=4,sld+1
 #--dpi-desync-split-pos=19,midsld-3,sniext+1,endhost-2,-10
 
---dpi-desync-ttl=0 --dpi-desync-repeats=3 --dpi-desync-fooling=badseq,md5sig
+--dpi-desync-ttl=0
+#--dpi-desync-repeats=3
+--dpi-desync-fooling=badseq,md5sig
+
 --dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
---dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=stackoverflow.com
+#--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
 <HOSTLIST>
 
 --new --filter-udp=443
@@ -35,5 +37,5 @@
 --dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n3
 
 --new --filter-udp=51820,2408,1002
---dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
+--dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=1
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin

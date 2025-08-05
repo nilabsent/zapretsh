@@ -1,2 +1,7 @@
+# comma separated list interfaces, if empty, the default route ipv4/ipv6 is used
 ISP_INTERFACE=
+
+# comma separated list of client ipv4 addresses, if empty, the option is disabled
+#CLIENTS_ALLOWED="192.168.1.0/24"
+
 LOG_LEVEL=0
