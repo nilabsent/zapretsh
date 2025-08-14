@@ -145,7 +145,8 @@ UDP_PORTS=$(_get_ports udp)
 
 _MANGLE_RULES()
 {
-    local i iface filter
+    local i iface filter ports
+    local port_limit=7
 
     # enable only for ipv4
     # $1 = "6" - sign that it is ipv6
@@ -162,11 +163,13 @@ _MANGLE_RULES()
     local rule_output_end="$filter -m mark ! --mark $DESYNC_MARK/$DESYNC_MARK -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original $rule_nfqueue"
 
     for iface in $ISP_IF; do
-        if [ "$TCP_PORTS" ]; then
-            echo "-A PREROUTING -i $iface -p tcp -m multiport --sports $TCP_PORTS -m connbytes --connbytes 1:3 --connbytes-mode packets --connbytes-dir reply $rule_nfqueue"
-            echo "-A POSTROUTING -o $iface -p tcp -m multiport --dports $TCP_PORTS $rule_output_end"
-        fi
-        [ "$UDP_PORTS" ] && echo "-A POSTROUTING -o $iface -p udp -m multiport --dports $UDP_PORTS $rule_output_end"
+        for ports in $(echo "$TCP_PORTS" | tr ',' '\n' | xargs -n$port_limit | tr ' ' ','); do
+            echo "-A PREROUTING -i $iface -p tcp -m multiport --sports $ports -m connbytes --connbytes 1:3 --connbytes-mode packets --connbytes-dir reply $rule_nfqueue"
+            echo "-A POSTROUTING -o $iface -p tcp -m multiport --dports $ports $rule_output_end"
+        done
+        for ports in $(echo "$UDP_PORTS" | tr ',' '\n' | xargs -n$port_limit | tr ' ' ','); do
+            echo "-A POSTROUTING -o $iface -p udp -m multiport --dports $ports $rule_output_end"
+        done
     done
 }
 

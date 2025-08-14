@@ -6,8 +6,10 @@
 # https: filter all domains, exept exclude.list
 --new --filter-tcp=443
 --dpi-desync=fake,multisplit --dpi-desync-split-pos=method+2,midsld,5
+--dpi-desync-fooling=badseq
+#--dpi-desync-fooling=md5sig
 #--dpi-desync-repeats=3
---dpi-desync-ttl=0 --dpi-desync-fooling=badseq,md5sig
+#--dpi-desync-ttl=0
 --dpi-desync-fake-tls-mod=rnd,dupsid,sni=stackoverflow.com
 --hostlist-exclude=/etc/storage/zapret/exclude.list
 
@@ -19,6 +21,6 @@
 --new --filter-udp=50000-50099
 --dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n3
 
---new --filter-udp=51820,2408,1002
+--new --filter-udp=51820,2408,1002,500,1701,4500,1024
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
