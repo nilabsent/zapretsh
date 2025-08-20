@@ -1,3 +1,5 @@
+# All arguments here: https://github.com/bol-van/zapret
+
 --filter-tcp=80
 --dpi-desync=fakeddisorder --dpi-desync-split-pos=sld+1 --dpi-desync-fooling=md5sig
 #--dpi-desync=multisplit --dpi-desync-split-pos=method+2 --dpi-desync-split-seqovl=1
@@ -18,17 +20,16 @@
 #--dpi-desync-split-pos=1,endhost-2
 #--dpi-desync-split-pos=1,sniext+2
 #--dpi-desync-split-pos=4,sld+1
-#--dpi-desync-split-pos=19,midsld-3,sniext+1,endhost-2,-10
 
---dpi-desync-fooling=badseq
+--dpi-desync-fooling=ts
+#--dpi-desync-fooling=badseq
 #--dpi-desync-fooling=md5sig
 
 #--dpi-desync-ttl=0
 #--dpi-desync-repeats=3
 
 --dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
---dpi-desync-fake-tls-mod=rnd,dupsid,sni=stackoverflow.com
-#--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+#--dpi-desync-fake-tls-mod=rnd,rndsni,padencap
 <HOSTLIST>
 
 --new --filter-udp=443
@@ -37,13 +38,12 @@
 <HOSTLIST_NOAUTO>
 
 --new --filter-udp=50000-50099
---dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n3
+--dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n2
 
---new --filter-udp=51820,2408,1002,500,1701,4500,1024
+--new --filter-udp=51820,2408,1002,500,1701,4500
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 
 ### calling in telegram, need test
-#--new --filter-udp=1400
-##--filter-udp=590-1400
-#--filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n3
+--new --filter-udp=1400
+--filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2
