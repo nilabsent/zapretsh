@@ -78,6 +78,8 @@ error()
 
 _get_if_default()
 {
+    # $1 = 4  - ipv4
+    # $1 = 6  - ipv6
     ip -$1 route show default | grep via | sed -r 's/^.*default.*via.* dev ([^ ]+).*$/\1/' | head -n1
 }
 
@@ -93,15 +95,22 @@ _get_ports()
         | sed -ne 'H;${x;s/\n/,/g;s/-/:/g;s/^,//;p;}'
 }
 
+get_port_list(){
+    # set limit for multiport iptables
+    local port_limit=7
+
+    echo "$1" | tr ',' '\n' | xargs -n$port_limit | tr ' ' ','
+}
+
 _mangle_rules()
 {
     local i iface filter ports
-    local port_limit=7
 
     # enable only for ipv4
     # $1 = "6" - sign that it is ipv6
     if [ "$CLIENTS_ALLOWED" -a ! "$1" ]; then
         filter="-m mark --mark $FILTER_MARK/$FILTER_MARK"
+
         echo "-A OUTPUT -j MARK --or-mark $FILTER_MARK"
         for i in $CLIENTS_ALLOWED; do
             echo "-A PREROUTING -s $i -j MARK --or-mark $FILTER_MARK"
@@ -112,11 +121,11 @@ _mangle_rules()
     local rule_output_end="$filter -m mark ! --mark $DESYNC_MARK/$DESYNC_MARK -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original $rule_nfqueue"
 
     for iface in $ISP_IF; do
-        for ports in $(echo "$TCP_PORTS" | tr ',' '\n' | xargs -n$port_limit | tr ' ' ','); do
+        for ports in $(get_port_list "$TCP_PORTS"); do
             echo "-A PREROUTING -i $iface -p tcp -m multiport --sports $ports -m connbytes --connbytes 1:3 --connbytes-mode packets --connbytes-dir reply $rule_nfqueue"
             echo "-A POSTROUTING -o $iface -p tcp -m multiport --dports $ports $rule_output_end"
         done
-        for ports in $(echo "$UDP_PORTS" | tr ',' '\n' | xargs -n$port_limit | tr ' ' ','); do
+        for ports in $(get_port_list "$UDP_PORTS"); do
             echo "-A POSTROUTING -o $iface -p udp -m multiport --dports $ports $rule_output_end"
         done
     done
@@ -176,9 +185,11 @@ offload_unset_nft_rules()
 
 offload_unset_ipt_rules()
 {
-    eval "$(ip$1tables-save -t filter 2>/dev/null | grep "FORWARD.*forwarding_rule_zapret" | sed 's/^-A/ip$1tables -D/g')"
-    ip$1tables -F forwarding_rule_zapret 2>/dev/null
-    ip$1tables -X forwarding_rule_zapret 2>/dev/null
+    for i in "" "6"; do
+        eval "$(ip${i}tables-save -t filter 2>/dev/null | grep "FORWARD.*forwarding_rule_zapret" | sed 's/^-A/ip${i}tables -D/g')"
+        ip${i}tables -F forwarding_rule_zapret 2>/dev/null
+        ip${i}tables -X forwarding_rule_zapret 2>/dev/null
+    done
 }
 
 offload_stop()
@@ -188,7 +199,6 @@ offload_stop()
         offload_unset_nft_rules
     else
         offload_unset_ipt_rules
-        offload_unset_ipt_rules 6
     fi
 }
 
@@ -209,25 +219,42 @@ offload_set_nft_rules()
 
 offload_set_ipt_rules()
 {
-    local hw_offload fw_forward
+    local hw_offload fw_forward iface ports i
+
+    forward_rule_zapret(){
+        echo "-A forwarding_rule_zapret -p $1 -m multiport --dports $ports -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original -m comment --comment zapret_traffic_offloading_exemption -j RETURN"
+    }
+
+    flow_rule_zapret(){
+        echo "-A forwarding_rule_zapret -m comment --comment zapret_traffic_offloading_enable -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD $hw_offload"
+    }
 
     [ "$(uci -q get firewall.@defaults[0].flow_offloading_hw)" = "1" ] && hw_offload="--hw"
 
-    fw_forward=$(
-        for IFACE in $ISP_IF; do
-            # insert after custom forwarding rule chain
-            echo "-I FORWARD 2 -o $IFACE -j forwarding_rule_zapret"
-        done)
+    for i in "" "6"; do
+        fw_forward=$(
+            for iface in $ISP_IF; do
+                # insert after custom forwarding rule chain
+                echo "-I FORWARD 2 -o $iface -j forwarding_rule_zapret"
+            done
 
-    [ -n "$fw_forward" ] && ip$1tables-restore -n <<EOF
+            for ports in $(get_port_list "$TCP_PORTS"); do
+                forward_rule_zapret tcp
+            done
+            for ports in $(get_port_list "$UDP_PORTS"); do
+                forward_rule_zapret udp
+            done
+
+            flow_rule_zapret
+        )
+
+        ip${i}tables-restore -n <<EOF
 *filter
 :forwarding_rule_zapret - [0:0]
--A forwarding_rule_zapret -p udp -m multiport --dports $UDP_PORTS -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original -m comment --comment zapret_traffic_offloading_exemption -j RETURN
--A forwarding_rule_zapret -p tcp -m multiport --dports $TCP_PORTS -m connbytes --connbytes 1:9 --connbytes-mode packets --connbytes-dir original -m comment --comment zapret_traffic_offloading_exemption -j RETURN
--A forwarding_rule_zapret -m comment --comment zapret_traffic_offloading_enable -m conntrack --ctstate RELATED,ESTABLISHED -j FLOWOFFLOAD $hw_offload
 $(echo "$fw_forward")
 COMMIT
 EOF
+    done
 }
 
 offload_start()
@@ -246,14 +273,15 @@ offload_start()
         offload_set_nft_rules
     else
         # delete system iptables offloading
-        eval "$(iptables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/iptables -D/g')"
-        eval "$(ip6tables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/ip6tables -D/g')"
+        local i
+        for i in "" "6"; do
+            eval "$(ip${i}tables-save -t filter 2>/dev/null | grep "FLOWOFFLOAD" | sed 's/^-A/ip${i}tables -D/g')"
+        done
 
         offload_set_ipt_rules
-        offload_set_ipt_rules 6
     fi
 
-    log "offloading rules updated"
+    log "firewall offloading rules updated"
 }
 
 nftables_stop()
@@ -267,7 +295,6 @@ iptables_stop()
     [ -n "$NFT" ] && return
 
     local i
-
     for i in "" "6"; do
         [ "$i" == "6" ] && [ ! -d /proc/sys/net/ipv6 ] && continue
         ip${i}tables-restore -n <<EOF
@@ -327,6 +354,7 @@ iptables_start()
     UDP_PORTS=$(echo $UDP_PORTS | tr -s "-" ":")
     TCP_PORTS=$(echo $TCP_PORTS | tr -s "-" ":")
 
+    local i
     for i in "" "6"; do
         [ "$i" == "6" ] && [ ! -d /proc/sys/net/ipv6 ] && continue
         ip${i}tables-restore -n <<EOF
