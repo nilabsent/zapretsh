@@ -23,6 +23,7 @@
 
 --dpi-desync-fooling=ts
 #--dpi-desync-fooling=badseq
+#--dpi-desync-badseq-increment=10000000
 #--dpi-desync-fooling=md5sig
 
 #--dpi-desync-ttl=0
