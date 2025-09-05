@@ -5,8 +5,7 @@
 --new --filter-tcp=443
 --dpi-desync=fake,fakeddisorder --dpi-desync-split-pos=1,midsld
 --dpi-desync-fooling=badseq
-#--dpi-desync-fooling=md5sig
-#--dpi-desync-ttl=0
+--dpi-desync-badseq-increment=10000000
 --dpi-desync-repeats=6
 --dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
 <HOSTLIST>
