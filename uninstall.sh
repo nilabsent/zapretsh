@@ -3,15 +3,12 @@
 [ $(id -u) != "0" ] && echo "root user is required to install" && exit 1
 cd $(dirname $0)
 
-[ -f /etc/os-release ] && . /etc/os-release
+[ -s /etc/os-release ] && . /etc/os-release
 
 remove_zapret(){
     [ -x /usr/bin/zapret.sh ] && zapret.sh stop
-    rm -f /usr/bin/zapret.sh
-    rm -f /usr/bin/nfqws
-    rm -rf /usr/share/zapret
-    rm -f /tmp/filter.list
-    rm -rf /etc/zapret
+    rm -f /usr/bin/zapret.sh /usr/bin/nfqws /tmp/filter.list
+    rm -rf /usr/share/zapret /etc/zapret
 }
 
 case "$ID" in
@@ -20,9 +17,7 @@ case "$ID" in
             /etc/init.d/zapret stop >/dev/null 2>&1
             /etc/init.d/zapret disable
         fi
-        rm -f /etc/init.d/zapret
-        rm -f /etc/firewall.zapret
-        sed -i '/zapret.sh download-list/d' /etc/rc.local
+        rm -f /etc/init.d/zapret /etc/firewall.zapret
         uci -q del firewall.zapret && uci commit
         remove_zapret
         /etc/init.d/firewall restart >/dev/null 2>&1
