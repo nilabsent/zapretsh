@@ -2,16 +2,14 @@
 ### filled from /dev/urandom, size = minimal MSS of using interfaces
 ### works with options ended -pattern,-syndata,-unknown,-unknown-udp
 --filter-tcp=80,443
-#--dpi-desync=fake,fakedsplit
---dpi-desync=syndata,fakedsplit
---dpi-desync-fake-syndata=/tmp/rnd2.bin
+--dpi-desync=fake,fakedsplit
+#--dpi-desync-fakedsplit-mod=altorder=0
 --dpi-desync-fakedsplit-pattern=/tmp/rnd.bin
 --dpi-desync-split-seqovl=666
 --dpi-desync-split-seqovl-pattern=/tmp/rnd1.bin
-#--dpi-desync-split-pos=2,sld+1,midsld,endsld,sniext
-#--dpi-desync-split-pos=method+2,midsld,5
 --dpi-desync-split-pos=1,midsld
---dpi-desync-fooling=ts
+--dpi-desync-fooling=badseq
+--dpi-desync-badseq-increment=10000000
 <HOSTLIST>
 
 --new --filter-udp=443
@@ -24,3 +22,7 @@
 
 --new --filter-udp=51820,2408,1002,500,1701,4500
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
+
+### calling in telegram, need test
+--new --filter-udp=1400
+--filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2
