@@ -133,7 +133,7 @@ _mangle_rules()
 
 is_running()
 {
-    [ -z "$(pgrep `basename "$NFQWS_BIN"` 2>/dev/null)" ] && return 1
+    [ -z "$(pidof $(basename "$NFQWS_BIN"))" ] && return 1
     [ "$PID_FILE" ]
 }
 
@@ -435,15 +435,15 @@ start_service()
 
     res=$($NFQWS_BIN --daemon --pidfile=$PID_FILE $(startup_args) 2>&1)
     if [ ! "$?" = "0" ]; then
-        log "failed to start: $(echo "$res" | grep 'github version')"
-        echo "$res" | grep -Ei 'unrecognized|invalid' \
+        log "failed to start: $(echo "$res" | head -n1)"
+        echo "$res" | head -n3 | grep -v 'github version' \
         | while read -r i; do
             log "$i"
         done
         exit 1
     fi
 
-    log "started, $(echo "$res" | grep 'github version')"
+    log "started, $(echo "$res" | head -n1)"
     [ "$CLIENTS_ALLOWED" ] && log "allowed clients: $CLIENTS_ALLOWED"
     log "use strategy from $STRATEGY_FILE"
     log "$pattern"
