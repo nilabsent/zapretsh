@@ -12,17 +12,21 @@
 --dpi-desync-badseq-increment=10000000
 <HOSTLIST>
 
+### quic
 --new --filter-udp=443
 --dpi-desync=fake --dpi-desync-repeats=6
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST_NOAUTO>
 
+### discord
 --new --filter-udp=50000-50099
 --dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n2
 
---new --filter-udp=51820,2408,1002,500,1701,4500
+### wireguard
+--new --filter-udp=51820,2408
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
+--dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 
-### calling in telegram, need test
+### telegram
 --new --filter-udp=1400
 --filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2

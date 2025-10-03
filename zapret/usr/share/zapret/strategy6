@@ -1,27 +1,32 @@
+### http
 --filter-tcp=80
 --dpi-desync=fakeddisorder --dpi-desync-split-pos=sld+1 --dpi-desync-fooling=md5sig
 --dpi-desync-split-seqovl=1 --dpi-desync-split-seqovl-pattern=0x5707a59f2c566692
 <HOSTLIST>
 
+### https
 --new --filter-tcp=443
 --dpi-desync=multisplit
 --dpi-desync-split-pos=1,midsld
---dpi-desync-split-seqovl=1
---dpi-desync-split-seqovl-pattern=/tmp/rnd.bin
+--dpi-desync-split-seqovl=681
+--dpi-desync-split-seqovl-pattern=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST>
 
+### quic
 --new --filter-udp=443
 --dpi-desync=fake --dpi-desync-repeats=6
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST_NOAUTO>
 
+### discord
 --new --filter-udp=50000-50099
 --dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n2
 
---new --filter-udp=51820,2408,1002
+### wireguard
+--new --filter-udp=51820,2408
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 
-### calling in telegram, need test
+### telegram
 --new --filter-udp=1400
 --filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2

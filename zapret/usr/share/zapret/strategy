@@ -1,49 +1,40 @@
 # All arguments here: https://github.com/bol-van/zapret
 
+### http
 --filter-tcp=80
 --dpi-desync=fakeddisorder --dpi-desync-split-pos=sld+1 --dpi-desync-fooling=md5sig
---dpi-desync-split-seqovl=1 --dpi-desync-split-seqovl-pattern=0x60cc104332bd1c7e
+--dpi-desync-split-seqovl=1 --dpi-desync-split-seqovl-pattern=0x6fb215205225e12c
 <HOSTLIST>
 
+### https
 --new --filter-tcp=443
-#--dpi-desync=fake,multisplit
-#--dpi-desync=fake,multidisorder
-#--dpi-desync=fake,fakeddisorder
---dpi-desync=fake,fakedsplit
---dpi-desync-fakedsplit-pattern=0x7dfd45599fdbbb3f
-#--dpi-desync-fakedsplit-mod=altorder=0
-
-#--dpi-desync-split-pos=2,method+2
---dpi-desync-split-pos=method+2,midsld,5
-#--dpi-desync-split-pos=2,sld+1,midsld,endsld,sniext
-#--dpi-desync-split-pos=1,midsld
-
+--dpi-desync=fake,multisplit
+--dpi-desync-split-pos=1,midsld
 --dpi-desync-fooling=badseq
 --dpi-desync-badseq-increment=10000000
-#--dpi-desync-fooling=ts
-
-#--dpi-desync-ttl=0
-#--dpi-desync-repeats=3
-
---dpi-desync-split-seqovl=1
---dpi-desync-split-seqovl-pattern=0xd34ee39ef66cc60f
-
---dpi-desync-fake-tls=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
-#--dpi-desync-fake-tls-mod=rnd,rndsni,dupsid
+--dpi-desync-repeats=2
+--dpi-desync-fake-tls=0x1603
+--dpi-desync-fake-tls=!
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+#--dpi-desync-tls-mod=rnd,rndsni,dupsid
+#--dpi-desync-fake-tcp-mod=seq
 <HOSTLIST>
 
+### quic
 --new --filter-udp=443
 --dpi-desync=fake --dpi-desync-repeats=6
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST_NOAUTO>
 
+### discord
 --new --filter-udp=50000-50099
 --dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n2
 
---new --filter-udp=51820,2408,1002,500,1701,4500
+### wireguard
+--new --filter-udp=51820,2408
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 
-### calling in telegram, need test
+### telegram
 --new --filter-udp=1400
 --filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2
