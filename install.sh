@@ -17,7 +17,7 @@ install_pkg(){
     else
         PKG_LIST=$(opkg list-installed)
     fi
-    PKG_DEP="curl iptables-mod-nfqueue iptables-mod-conntrack-extra"
+    PKG_DEP="curl iptables-mod-nfqueue iptables-mod-conntrack-extra iptables-mod-u32"
     nft -v >/dev/null 2>&1 && PKG_DEP="curl kmod-nft-queue kmod-nfnetlink-queue"
     PKG=$( for i in $PKG_DEP; do
         echo "$PKG_LIST" | grep -Eqo "^$i " || echo $i
