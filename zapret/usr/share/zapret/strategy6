@@ -1,15 +1,19 @@
 ### http
 --filter-tcp=80
---dpi-desync=fakeddisorder --dpi-desync-split-pos=sld+1 --dpi-desync-fooling=md5sig
---dpi-desync-split-seqovl=1 --dpi-desync-split-seqovl-pattern=0x5707a59f2c566692
+--dpi-desync=hostfakesplit --dpi-desync-hostfakesplit-mod=altorder=1
+--dpi-desync-fooling=md5sig
 <HOSTLIST>
 
 ### https
 --new --filter-tcp=443
---dpi-desync=multisplit
+--dpi-desync=fake,fakeddisorder
+--dpi-desync-fakedsplit-mod=altorder=1
 --dpi-desync-split-pos=1,midsld
---dpi-desync-split-seqovl=681
---dpi-desync-split-seqovl-pattern=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+--dpi-desync-fooling=ts
+--dpi-desync-repeats=2
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=!
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
 <HOSTLIST>
 
 ### quic
@@ -27,6 +31,9 @@
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 
-### telegram
---new --filter-udp=1400
---filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2
+### calling in whatsapp, telegram
+--new --filter-udp=28-65535
+--filter-l7=stun
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-cutoff=n2

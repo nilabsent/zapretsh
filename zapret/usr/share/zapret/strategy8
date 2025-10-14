@@ -1,20 +1,31 @@
+### http
+--filter-tcp=80
+--dpi-desync=hostfakesplit --dpi-desync-hostfakesplit-mod=altorder=1
+--dpi-desync-fooling=md5sig
+<HOSTLIST>
+
 ### files rnd[0-9].bin autocreated only when the /tmp directory is specified
 ### filled from /dev/urandom, size = minimal MSS of using interfaces
 ### works with options ended -pattern,-syndata,-unknown,-unknown-udp
---filter-tcp=80,443
+### champloo ¯\_(ツ)_/¯
+--new --filter-tcp=443
 --dpi-desync=fake,fakedsplit
-#--dpi-desync-fakedsplit-mod=altorder=0
+--dpi-desync-fakedsplit-mod=altorder=0
 --dpi-desync-fakedsplit-pattern=/tmp/rnd.bin
 --dpi-desync-split-seqovl=666
 --dpi-desync-split-seqovl-pattern=/tmp/rnd1.bin
 --dpi-desync-split-pos=1,midsld
+--dpi-desync-fake-tls=0x00000000
+--dpi-desync-fake-tls=!
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+--dpi-desync-fake-tcp-mod=seq
 --dpi-desync-fooling=badseq
 --dpi-desync-badseq-increment=10000000
 <HOSTLIST>
 
 ### quic
 --new --filter-udp=443
---dpi-desync=fake --dpi-desync-repeats=6
+--dpi-desync=fake --dpi-desync-repeats=17
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 <HOSTLIST_NOAUTO>
 
@@ -27,6 +38,9 @@
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 
-### telegram
---new --filter-udp=1400
---filter-l7=stun --dpi-desync=fake --dpi-desync-cutoff=n2
+### calling in whatsapp, telegram
+--new --filter-udp=28-65535
+--filter-l7=stun
+--dpi-desync=fake
+--dpi-desync-repeats=6
+--dpi-desync-cutoff=n2
