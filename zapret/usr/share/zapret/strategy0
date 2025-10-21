@@ -37,4 +37,3 @@
 --filter-l7=stun
 --dpi-desync=fake
 --dpi-desync-repeats=6
---dpi-desync-cutoff=n2

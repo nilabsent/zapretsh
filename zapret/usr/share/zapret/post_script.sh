@@ -14,6 +14,7 @@
 
 
 ### uncomment required feature
+### don't forget to remove the relevant filters from the strategies
 #CUSTOM_STUN4ALL=1
 #CUSTOM_WG4ALL=1
 #CUSTOM_QUICK4ALL=1
@@ -23,7 +24,7 @@
 
 ### custom desync strategy
 DESYNC_STUN4ALL="--dpi-desync=fake --dpi-desync-repeats=2"
-DESYNC_WG4ALL="--dpi-desync=fake --dpi-desync-repeats=11"
+DESYNC_WG4ALL="--dpi-desync=fake --dpi-desync-repeats=11 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin"
 DESYNC_QUICK4ALL="--dpi-desync=fake --dpi-desync-repeats=6"
 DESYNC_DISCORD="--dpi-desync=fake --dpi-desync-repeats=2"
 ###
