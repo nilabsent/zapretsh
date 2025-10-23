@@ -1,6 +1,7 @@
 ### http
 --filter-tcp=80
---dpi-desync=hostfakesplit --dpi-desync-hostfakesplit-mod=altorder=1 --dpi-desync-fooling=md5sig
+--dpi-desync=hostfakesplit --dpi-desync-hostfakesplit-mod=altorder=1
+--dpi-desync-fooling=md5sig
 <HOSTLIST>
 
 ### https

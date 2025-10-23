@@ -9,7 +9,7 @@
 ### https
 --new --filter-tcp=443
 --dpi-desync=multisplit
---dpi-desync-split-pos=2
+--dpi-desync-split-pos=1,midsld
 --dpi-desync-split-seqovl=765
 --dpi-desync-split-seqovl-pattern=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
 --dpi-desync-repeats=2
