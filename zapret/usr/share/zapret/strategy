@@ -2,8 +2,9 @@
 
 ### http
 --filter-tcp=80
---dpi-desync=hostfakesplit --dpi-desync-hostfakesplit-mod=altorder=1 --dpi-desync-fooling=md5sig
-#--dpi-desync=fakeddisorder --dpi-desync-fakedsplit-mod=altorder=1 --dpi-desync-split-pos=method+2 --dpi-desync-fooling=ts
+--dpi-desync=hostfakesplit
+--dpi-desync-hostfakesplit-mod=altorder=1
+--dpi-desync-fooling=md5sig
 <HOSTLIST>
 
 ### https
@@ -29,6 +30,15 @@
 --new --filter-udp=51820,2408
 --dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
 --dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+
+### for Battlefield 6, need test
+--new --filter-udp=21000-21500,65530-65535
+--dpi-desync=fake
+--dpi-desync-any-protocol=1
+--dpi-desync-autottl=2
+--dpi-desync-repeats=9
+--dpi-desync-fake-unknown-udp=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+--dpi-desync-cutoff=n2
 
 ### calling in whatsapp, telegram
 --new --filter-udp=28-65535
