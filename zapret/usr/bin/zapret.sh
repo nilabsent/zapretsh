@@ -134,7 +134,7 @@ _mangle_rules()
 is_running()
 {
     [ -z "$(pidof $(basename "$NFQWS_BIN"))" ] && return 1
-    [ "$PID_FILE" ]
+    [ -f "$PID_FILE" ]
 }
 
 status_service()
