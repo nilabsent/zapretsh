@@ -1,45 +1,49 @@
-### http
---filter-tcp=80
---dpi-desync=hostfakesplit --dpi-desync-hostfakesplit-mod=altorder=1
---dpi-desync-fooling=md5sig
-<HOSTLIST>
+### All arguments here: https://github.com/bol-van/zapret
+### To enable ts fooling in Windows: netsh interface tcp set global timestamps=enabled
 
-### files rnd[0-9].bin autocreated only when the /tmp directory is specified
-### filled from /dev/urandom, size = minimal MSS of using interfaces
-### works with options ended -pattern,-syndata,-unknown,-unknown-udp
-### champloo ¯\_(ツ)_/¯
+### http: filter all domains, exept exclude.list
+--filter-tcp=80
+--dpi-desync=hostfakesplit
+--dpi-desync-fooling=md5sig
+--dpi-desync-repeats=2
+--hostlist-exclude=/etc/zapret/exclude.list
+#--hostlist-exclude=/etc/storage/zapret/exclude.list
+
+### https: filter all domains, exept exclude.list
 --new --filter-tcp=443
 --dpi-desync=fake,fakedsplit
---dpi-desync-fakedsplit-mod=altorder=0
---dpi-desync-fakedsplit-pattern=/tmp/rnd.bin
---dpi-desync-split-seqovl=666
---dpi-desync-split-seqovl-pattern=/tmp/rnd1.bin
---dpi-desync-split-pos=1,midsld
---dpi-desync-fake-tls=0x00000000
---dpi-desync-fake-tls=!
---dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
---dpi-desync-fake-tcp-mod=seq
---dpi-desync-fooling=badseq
---dpi-desync-badseq-increment=10000000
-<HOSTLIST>
+--dpi-desync-fakedsplit-mod=altorder=1
+--dpi-desync-fakedsplit-pattern=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
+--dpi-desync-split-pos=2,midsld
+--dpi-desync-fooling=ts
+--dpi-desync-split-seqovl=2
+--dpi-desync-split-seqovl-pattern=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
+--dpi-desync-fake-tls-mod=rnd,dupsid,sni=fonts.google.com
+--hostlist-exclude=/etc/zapret/exclude.list
+#--hostlist-exclude=/etc/storage/zapret/exclude.list
 
 ### quic
 --new --filter-udp=443
---dpi-desync=fake --dpi-desync-repeats=17
+--dpi-desync=fake --dpi-desync-repeats=6
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
-<HOSTLIST_NOAUTO>
+--hostlist-exclude=/etc/zapret/exclude.list
+#--hostlist-exclude=/etc/storage/zapret/exclude.list
 
-### discord
---new --filter-udp=50000-50099
---dpi-desync=fake --filter-l7=discord,stun --dpi-desync-cutoff=n2
-
-### wireguard
---new --filter-udp=51820,2408
---dpi-desync=fake --filter-l7=wireguard --dpi-desync-repeats=6
---dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
-
-### calling in whatsapp, telegram
---new --filter-udp=28-65535
---filter-l7=stun
+### games
+--new --filter-udp=21000-21500,65530-65535
 --dpi-desync=fake
+--dpi-desync-cutoff=n2
+--dpi-desync-any-protocol=1
+--dpi-desync-autottl=2
 --dpi-desync-repeats=6
+--dpi-desync-fake-unknown-udp=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+
+### wireguard, discord, telegram
+--new --filter-udp=1024-65535
+--dpi-desync=fake --filter-l7=wireguard,discord,stun
+--dpi-desync-cutoff=n2
+--dpi-desync-repeats=6
+--dpi-desync-fake-discord=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+--dpi-desync-fake-wireguard=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+--dpi-desync-fake-stun=/usr/share/zapret/fake/quic_initial_www_google_com.bin
+
