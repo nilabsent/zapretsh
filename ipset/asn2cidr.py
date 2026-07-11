@@ -28,11 +28,12 @@ OUTPUT_DIR = pathlib.Path("ipv4")
 AS_LIST = {
     "amazon": (16509,),
     "cloudflare": (13335,),
-    "contabo": (51167,),
-    "digitalocean": (14061,),
+    "contabo": (51167, 141995),
+    "digitalocean": (14061, 46652,),
     "ovh": (16276,),
-    "hetzner": (24940,),
+    "hetzner": (24940, 213230, 212317, 215859,),
     "akamai": (20940,),
+    "oracle": (31898, 1219, 54253, 6142, 14544, 20054,),
     "telegram": (62041, 62014, 59930, 44907, 211157,),
 }
 
