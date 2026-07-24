@@ -37,6 +37,7 @@ AS_LIST = {
     "telegram": ( 62041, 62014, 59930, 44907, 211157, ),
     "meta": ( 63293, 32934, ),
     "sberbank": ( 35237, 47457, 208117, 211631, 43396, 60122, 42628, 205158, 44408, 45000, 209701, 205161, 42974, ),
+    "github": ( 36459, "185.199.108.0/22", ),
 }
 
 def download_table():
@@ -63,12 +64,19 @@ def load_table():
 
     # ASN -> имя ipset
     asn_map = {}
-
-    for name, asns in AS_LIST.items():
-        for asn in asns:
-            asn_map[str(asn)] = name
-
     result = defaultdict(set)
+
+    for name, items in AS_LIST.items():
+        for item in items:
+            if isinstance(item, int):
+                # ASN
+                asn_map[str(item)] = name
+            else:
+                # Статическая сеть
+                try:
+                    result[name].add(ipaddress.IPv4Network(item))
+                except ValueError:
+                    print(f"Invalid network: {item}", file=sys.stderr)
 
     with TABLE_FILE.open("r", encoding="ascii") as f:
         for line in f:
