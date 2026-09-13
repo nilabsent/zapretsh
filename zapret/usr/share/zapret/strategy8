@@ -7,7 +7,6 @@
 --dpi-desync-fooling=md5sig
 --dpi-desync-repeats=2
 --hostlist-exclude=/etc/zapret/exclude.list
-#--hostlist-exclude=/etc/storage/zapret/exclude.list
 
 ### https: filter all domains, exept exclude.list
 --new --filter-tcp=443
@@ -20,14 +19,12 @@
 --dpi-desync-split-seqovl-pattern=/usr/share/zapret/fake/tls_clienthello_www_google_com.bin
 --dpi-desync-fake-tls-mod=rnd,dupsid,sni=fonts.google.com
 --hostlist-exclude=/etc/zapret/exclude.list
-#--hostlist-exclude=/etc/storage/zapret/exclude.list
 
 ### quic
 --new --filter-udp=443
 --dpi-desync=fake --dpi-desync-repeats=6
 --dpi-desync-fake-quic=/usr/share/zapret/fake/quic_initial_www_google_com.bin
 --hostlist-exclude=/etc/zapret/exclude.list
-#--hostlist-exclude=/etc/storage/zapret/exclude.list
 
 ### games
 --new --filter-udp=21000-21500,65530-65535
